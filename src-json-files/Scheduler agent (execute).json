@@ -1,0 +1,1060 @@
+{
+  "name": "Scheduler agent (execute)",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "user_id"
+            },
+            {
+              "name": "proposal_ids"
+            }
+          ]
+        }
+      },
+      "id": "648e6699-ec71-4786-bc76-26f1d9b4fb63",
+      "name": "When approved",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "5NcIttwxWCVGLBLB",
+          "cachedResultName": "pending_proposals"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "user_id",
+              "keyValue": "={{ $json.user_id }}"
+            },
+            {
+              "keyName": "status",
+              "keyValue": "pending"
+            },
+            {
+              "keyName": "agent",
+              "keyValue": "scheduler"
+            }
+          ]
+        },
+        "returnAll": true
+      },
+      "id": "37129c8d-6938-49a4-bda5-dc51866b8aae",
+      "name": "Get pending proposals",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        272,
+        448
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Keep only this user's pending scheduler rows whose ids were approved.\n// The stored action is used as-is; nothing here re-writes it.\nconst input = $('When approved').first().json;\nconst user_id = String(input.user_id || '');\nlet ids = input.proposal_ids;\nif (typeof ids === 'string') { try { ids = JSON.parse(ids); } catch (e) { ids = ids.split(','); } }\nif (!Array.isArray(ids)) ids = ids ? [ids] : [];\nids = ids.map(s => String(s).trim()).filter(Boolean);\nconst rows = $input.all().map(i => i.json)\n  .filter(r => r.proposal_id && String(r.user_id) === user_id && r.status === 'pending' && ids.includes(r.proposal_id));\nconst out = [];\nconst bad = [];\nfor (const r of rows) {\n  let act;\n  try { act = JSON.parse(r.action); } catch (e) { bad.push(r.proposal_id); continue; }\n  // An approved time option (propose_times) means: book that slot.\n  // With an existing event_id it is a move; otherwise it is a new meeting.\n  if (['propose_times', 'propose_time', 'book_slot'].includes(act.type) && act.start && act.end) {\n    act.type = act.event_id ? 'reschedule_event' : 'create_event';\n  }\n  // Weekend rule: never book or move a meeting onto Saturday or Sunday (user's timezone).\n  if ((act.type === 'create_event' || act.type === 'reschedule_event') && act.start) {\n    const st = DateTime.fromISO(String(act.start), { setZone: true }).setZone('Asia/Kolkata');\n    if (st.isValid && st.weekday >= 6) {\n      out.push({ json: { proposal_id: r.proposal_id, user_id: r.user_id, type: 'weekend', summary: r.summary, act,\n        reason: 'Weekend: ' + st.toFormat('cccc d LLL, h:mm a') + ' falls on a ' + st.toFormat('cccc') + '. Meetings are not scheduled on Saturday or Sunday. Nothing was written; the proposal stays pending.' } });\n      continue;\n    }\n  }\n  out.push({ json: { proposal_id: r.proposal_id, user_id: r.user_id, type: act.type, summary: r.summary, act } });\n}\nif (!out.length) {\n  return [{ json: { type: 'none', proposal_id: ids.join(','),\n    reason: bad.length ? 'Stored actions could not be read: ' + bad.join(', ') : 'No pending scheduler proposals match these ids for this user' } }];\n}\nreturn out;"
+      },
+      "id": "75b65628-f8a9-47ce-991c-474ad86c88d7",
+      "name": "Pick approved",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        496,
+        448
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.type }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "create_event"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Create event"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.type }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "reschedule_event"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Reschedule event"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.type }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "cancel_event"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Cancel event"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "None or unsupported"
+        }
+      },
+      "id": "9a0155fc-0f5d-41fc-9de9-ba6d18db0b55",
+      "name": "Route by action",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        720,
+        416
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "calendar",
+        "calendar": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Pick approved').item.json.act.calendar_id || 'primary' }}"
+        },
+        "timeMin": "={{ $('Pick approved').item.json.act.start }}",
+        "timeMax": "={{ $('Pick approved').item.json.act.end }}",
+        "options": {
+          "outputFormat": "availability"
+        }
+      },
+      "id": "a3ee057a-8980-4dff-abf4-116e90c0eb93",
+      "name": "Re-check free/busy (new)",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        800,
+        224
+      ],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "FGqp1UtTPeBwJuII",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.available }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "36cd9b86-30d9-4c5c-9591-5d4086758b19",
+      "name": "Still free? (new)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1024,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.googleapis.com/calendar/v3/freeBusy",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleCalendarOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ timeMin: $('Pick approved').item.json.act.start, timeMax: $('Pick approved').item.json.act.end, items: ((ids) => ids.length ? ids : [$('Pick approved').item.json.act.calendar_id || 'primary'])((() => { const a = $('Pick approved').item.json.act; const self = [a.calendar_id].concat(a.self_emails || []).map(s => String(s || '').toLowerCase()); return [...new Set((a.attendees || []).map(x => String(x).trim().toLowerCase()).filter(x => x && !self.includes(x)))]; })()).map(id => ({ id })) }) }}",
+        "options": {}
+      },
+      "id": "2f7b3cb7-4689-4f7a-973e-ad15bcd49a27",
+      "name": "Check invitees (new)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1248,
+        512
+      ],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "FGqp1UtTPeBwJuII",
+          "name": "Google Calendar account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ ((ids, cals) => ids.every(id => cals[id] && !(cals[id].errors || []).length && !(cals[id].busy || []).length))((() => { const a = $('Pick approved').item.json.act; const self = [a.calendar_id].concat(a.self_emails || []).map(s => String(s || '').toLowerCase()); return [...new Set((a.attendees || []).map(x => String(x).trim().toLowerCase()).filter(x => x && !self.includes(x)))]; })(), $json.calendars || {}) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "7d340758-1213-4fb9-9878-7045ac82789f",
+      "name": "Invitees free? (new)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1472,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Pick approved').item.json.act.calendar_id || 'primary' }}"
+        },
+        "start": "={{ $('Pick approved').item.json.act.start }}",
+        "end": "={{ $('Pick approved').item.json.act.end }}",
+        "additionalFields": {
+          "attendees": [
+            "={{ ($('Pick approved').item.json.act.attendees || []).filter(a => a && String(a).trim()).join(',') || ($('Pick approved').item.json.act.calendar_id || 'aiagenticlearner@gmail.com') }}"
+          ],
+          "description": "={{ $('Pick approved').item.json.act.notes || '' }}",
+          "sendUpdates": "all",
+          "summary": "={{ $('Pick approved').item.json.act.title }}"
+        }
+      },
+      "id": "7f38ce89-68f8-4dcd-bee4-6862db97d49e",
+      "name": "Create event",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        1248,
+        128
+      ],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "FGqp1UtTPeBwJuII",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "5NcIttwxWCVGLBLB",
+          "cachedResultName": "pending_proposals"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "proposal_id",
+              "keyValue": "={{ $('Pick approved').item.json.proposal_id }}"
+            },
+            {
+              "keyName": "user_id",
+              "keyValue": "={{ $('Pick approved').item.json.user_id }}"
+            },
+            {
+              "keyName": "status",
+              "keyValue": "pending"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8bc8fb6a-59b4-47d0-9214-bfcd72abcece",
+      "name": "Mark done",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1280,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d1",
+              "name": "status",
+              "type": "string",
+              "value": "done"
+            },
+            {
+              "id": "d2",
+              "name": "proposal_id",
+              "type": "string",
+              "value": "={{ $('Pick approved').item.json.proposal_id }}"
+            },
+            {
+              "id": "d3",
+              "name": "notes",
+              "type": "string",
+              "value": "={{ 'Done: ' + $('Pick approved').item.json.summary }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "6e119e38-9836-4a2a-99c3-286a5e87b398",
+      "name": "Return done",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1504,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "i1",
+              "name": "status",
+              "type": "string",
+              "value": "failed"
+            },
+            {
+              "id": "i2",
+              "name": "proposal_id",
+              "type": "string",
+              "value": "={{ $('Pick approved').item.json.proposal_id }}"
+            },
+            {
+              "id": "i3",
+              "name": "notes",
+              "type": "string",
+              "value": "={{ ((ids, cals) => { const busy = ids.filter(id => cals[id] && !(cals[id].errors || []).length && (cals[id].busy || []).length); const unk = ids.filter(id => !cals[id] || (cals[id].errors || []).length); return 'Not booked. ' + (busy.length ? 'Busy: ' + busy.join(', ') + '. ' : '') + (unk.length ? 'Availability could not be checked (calendar not shared): ' + unk.join(', ') + '. ' : '') + 'Nothing was written; the proposal stays pending.'; })((() => { const a = $('Pick approved').item.json.act; const self = [a.calendar_id].concat(a.self_emails || []).map(s => String(s || '').toLowerCase()); return [...new Set((a.attendees || []).map(x => String(x).trim().toLowerCase()).filter(x => x && !self.includes(x)))]; })(), $json.calendars || {}) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c196fbf6-5135-4423-86f0-e19dea36a040",
+      "name": "Invitees not free (new)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1696,
+        608
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "s1",
+              "name": "status",
+              "type": "string",
+              "value": "failed"
+            },
+            {
+              "id": "s2",
+              "name": "proposal_id",
+              "type": "string",
+              "value": "={{ $('Pick approved').item.json.proposal_id }}"
+            },
+            {
+              "id": "s3",
+              "name": "notes",
+              "type": "string",
+              "value": "The slot is no longer free. Nothing was written; the proposal stays pending."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0bb5f69f-2133-4d7f-9c25-8cfbf07d1493",
+      "name": "Slot taken (new)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1248,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "calendar",
+        "calendar": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Pick approved').item.json.act.calendar_id || 'primary' }}"
+        },
+        "timeMin": "={{ $('Pick approved').item.json.act.start }}",
+        "timeMax": "={{ $('Pick approved').item.json.act.end }}",
+        "options": {
+          "outputFormat": "availability"
+        }
+      },
+      "id": "16298066-201d-4abf-acf2-5c0f20e6164e",
+      "name": "Re-check free/busy (move)",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        800,
+        416
+      ],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "FGqp1UtTPeBwJuII",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.available }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "c9681af4-9d44-4960-ae78-8c548b3f0a2c",
+      "name": "Still free? (move)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1024,
+        416
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.googleapis.com/calendar/v3/freeBusy",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleCalendarOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ timeMin: $('Pick approved').item.json.act.start, timeMax: $('Pick approved').item.json.act.end, items: ((ids) => ids.length ? ids : [$('Pick approved').item.json.act.calendar_id || 'primary'])((() => { const a = $('Pick approved').item.json.act; const self = [a.calendar_id].concat(a.self_emails || []).map(s => String(s || '').toLowerCase()); return [...new Set((a.attendees || []).map(x => String(x).trim().toLowerCase()).filter(x => x && !self.includes(x)))]; })()).map(id => ({ id })) }) }}",
+        "options": {}
+      },
+      "id": "5c1dac52-7b42-4d22-8995-b4f5f778c10d",
+      "name": "Check invitees (move)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1248,
+        704
+      ],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "FGqp1UtTPeBwJuII",
+          "name": "Google Calendar account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ ((ids, cals) => ids.every(id => cals[id] && !(cals[id].errors || []).length && !(cals[id].busy || []).length))((() => { const a = $('Pick approved').item.json.act; const self = [a.calendar_id].concat(a.self_emails || []).map(s => String(s || '').toLowerCase()); return [...new Set((a.attendees || []).map(x => String(x).trim().toLowerCase()).filter(x => x && !self.includes(x)))]; })(), $json.calendars || {}) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "87cd71bb-d5ed-4136-a127-4f568655f47d",
+      "name": "Invitees free? (move)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1472,
+        704
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "calendar": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Pick approved').item.json.act.calendar_id || 'primary' }}"
+        },
+        "eventId": "={{ $('Pick approved').item.json.act.event_id }}",
+        "updateFields": {
+          "end": "={{ $('Pick approved').item.json.act.end }}",
+          "sendUpdates": "all",
+          "start": "={{ $('Pick approved').item.json.act.start }}"
+        }
+      },
+      "id": "a8b5a133-e9b0-4985-a2e9-6ad9e3abbbf4",
+      "name": "Move event",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        1248,
+        320
+      ],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "FGqp1UtTPeBwJuII",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "i1",
+              "name": "status",
+              "type": "string",
+              "value": "failed"
+            },
+            {
+              "id": "i2",
+              "name": "proposal_id",
+              "type": "string",
+              "value": "={{ $('Pick approved').item.json.proposal_id }}"
+            },
+            {
+              "id": "i3",
+              "name": "notes",
+              "type": "string",
+              "value": "={{ ((ids, cals) => { const busy = ids.filter(id => cals[id] && !(cals[id].errors || []).length && (cals[id].busy || []).length); const unk = ids.filter(id => !cals[id] || (cals[id].errors || []).length); return 'Not booked. ' + (busy.length ? 'Busy: ' + busy.join(', ') + '. ' : '') + (unk.length ? 'Availability could not be checked (calendar not shared): ' + unk.join(', ') + '. ' : '') + 'Nothing was written; the proposal stays pending.'; })((() => { const a = $('Pick approved').item.json.act; const self = [a.calendar_id].concat(a.self_emails || []).map(s => String(s || '').toLowerCase()); return [...new Set((a.attendees || []).map(x => String(x).trim().toLowerCase()).filter(x => x && !self.includes(x)))]; })(), $json.calendars || {}) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4ca18e59-e863-4525-abba-3b77b604bc52",
+      "name": "Invitees not free (move)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1696,
+        800
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "s1",
+              "name": "status",
+              "type": "string",
+              "value": "failed"
+            },
+            {
+              "id": "s2",
+              "name": "proposal_id",
+              "type": "string",
+              "value": "={{ $('Pick approved').item.json.proposal_id }}"
+            },
+            {
+              "id": "s3",
+              "name": "notes",
+              "type": "string",
+              "value": "The slot is no longer free. Nothing was written; the proposal stays pending."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8b2ab15a-0be4-4548-a362-8feb407c4dbd",
+      "name": "Slot taken (move)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1248,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "calendar": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Pick approved').item.json.act.calendar_id || 'primary' }}"
+        },
+        "eventId": "={{ $('Pick approved').item.json.act.event_id }}",
+        "options": {
+          "sendUpdates": "all"
+        }
+      },
+      "id": "df59609a-ab40-45c9-a320-2185e3747523",
+      "name": "Cancel event",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        912,
+        384
+      ],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "FGqp1UtTPeBwJuII",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "r1",
+              "name": "status",
+              "type": "string",
+              "value": "failed"
+            },
+            {
+              "id": "r2",
+              "name": "proposal_id",
+              "type": "string",
+              "value": "={{ $json.proposal_id || \"\" }}"
+            },
+            {
+              "id": "r3",
+              "name": "notes",
+              "type": "string",
+              "value": "={{ $json.reason || (\"Unsupported action type: \" + $json.type) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8c017bd5-67f1-4657-8843-8e085b7bddee",
+      "name": "Return failed",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        912,
+        576
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When approved": {
+      "main": [
+        [
+          {
+            "node": "Get pending proposals",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get pending proposals": {
+      "main": [
+        [
+          {
+            "node": "Pick approved",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick approved": {
+      "main": [
+        [
+          {
+            "node": "Route by action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by action": {
+      "main": [
+        [
+          {
+            "node": "Re-check free/busy (new)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Re-check free/busy (move)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Cancel event",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Re-check free/busy (new)": {
+      "main": [
+        [
+          {
+            "node": "Still free? (new)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Still free? (new)": {
+      "main": [
+        [
+          {
+            "node": "Check invitees (new)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slot taken (new)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check invitees (new)": {
+      "main": [
+        [
+          {
+            "node": "Invitees free? (new)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Invitees free? (new)": {
+      "main": [
+        [
+          {
+            "node": "Create event",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Invitees not free (new)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create event": {
+      "main": [
+        [
+          {
+            "node": "Mark done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark done": {
+      "main": [
+        [
+          {
+            "node": "Return done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Re-check free/busy (move)": {
+      "main": [
+        [
+          {
+            "node": "Still free? (move)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Still free? (move)": {
+      "main": [
+        [
+          {
+            "node": "Check invitees (move)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slot taken (move)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check invitees (move)": {
+      "main": [
+        [
+          {
+            "node": "Invitees free? (move)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Invitees free? (move)": {
+      "main": [
+        [
+          {
+            "node": "Move event",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Invitees not free (move)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Move event": {
+      "main": [
+        [
+          {
+            "node": "Mark done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cancel event": {
+      "main": [
+        [
+          {
+            "node": "Mark done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "errorWorkflow": "mgTS3Y2KolpDdVX0"
+  },
+  "versionId": "4fa52427-e3c1-4c79-b08d-788d520b29aa",
+  "meta": {
+    "instanceId": "ec4f3655d17daa19a5288cbca637de661f51f490a4e49ce8a984f9e8ea511425"
+  },
+  "nodeGroups": [
+    {
+      "id": "8fdbd6b3-c0ac-4bf5-9554-26828769a5b5",
+      "name": "Load approved actions",
+      "nodeIds": [
+        "37129c8d-6938-49a4-bda5-dc51866b8aae",
+        "75b65628-f8a9-47ce-991c-474ad86c88d7",
+        "9a0155fc-0f5d-41fc-9de9-ba6d18db0b55"
+      ],
+      "description": "Takes the approved ids and keeps only this user's pending scheduler rows, then routes each stored action by type"
+    },
+    {
+      "id": "e5dba47a-0a68-42b5-b8fe-151ee972ffee",
+      "name": "Book new meeting",
+      "nodeIds": [
+        "a3ee057a-8980-4dff-abf4-116e90c0eb93",
+        "36cd9b86-30d9-4c5c-9591-5d4086758b19",
+        "2f7b3cb7-4689-4f7a-973e-ad15bcd49a27",
+        "7d340758-1213-4fb9-9878-7045ac82789f",
+        "7f38ce89-68f8-4dcd-bee4-6862db97d49e",
+        "0bb5f69f-2133-4d7f-9c25-8cfbf07d1493",
+        "c196fbf6-5135-4423-86f0-e19dea36a040"
+      ],
+      "description": "Right before booking, confirms your slot and every invitee are free; anything busy or unreadable is reported and left pending"
+    },
+    {
+      "id": "95e9461b-d277-49f8-95b0-1ea3ee84997c",
+      "name": "Reschedule meeting",
+      "nodeIds": [
+        "16298066-201d-4abf-acf2-5c0f20e6164e",
+        "c9681af4-9d44-4960-ae78-8c548b3f0a2c",
+        "5c1dac52-7b42-4d22-8995-b4f5f778c10d",
+        "87cd71bb-d5ed-4136-a127-4f568655f47d",
+        "a8b5a133-e9b0-4985-a2e9-6ad9e3abbbf4",
+        "8b2ab15a-0be4-4548-a362-8feb407c4dbd",
+        "4ca18e59-e863-4525-abba-3b77b604bc52"
+      ],
+      "description": "Confirms the new time is free for you and every listed invitee, then moves only the time"
+    },
+    {
+      "id": "253753b5-24c5-4927-bacb-2628e0afd37a",
+      "name": "Record result",
+      "nodeIds": [
+        "8bc8fb6a-59b4-47d0-9214-bfcd72abcece",
+        "6e119e38-9836-4a2a-99c3-286a5e87b398"
+      ],
+      "description": "Marks each applied proposal done so it cannot run twice, and reports it back to the router"
+    }
+  ],
+  "id": "ltULLA6OTr7Ytr69",
+  "tags": []
+}

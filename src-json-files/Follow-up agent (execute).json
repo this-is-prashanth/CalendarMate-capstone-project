@@ -1,5 +1,5 @@
 {
-  "name": "Scheduler agent (execute)",
+  "name": "Follow-up agent (execute)",
   "nodes": [
     {
       "parameters": {
@@ -9,18 +9,19 @@
               "name": "user_id"
             },
             {
-              "name": "proposal_ids"
+              "name": "proposal_ids",
+              "type": "array"
             }
           ]
         }
       },
-      "id": "648e6699-ec71-4786-bc76-26f1d9b4fb63",
+      "id": "f1ade3c8-84ed-4e0a-873a-d0aef01daf37",
       "name": "When approved",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
       "position": [
         0,
-        288
+        384
       ]
     },
     {
@@ -45,33 +46,33 @@
             },
             {
               "keyName": "agent",
-              "keyValue": "scheduler"
+              "keyValue": "follow_up"
             }
           ]
         },
         "returnAll": true
       },
-      "id": "37129c8d-6938-49a4-bda5-dc51866b8aae",
+      "id": "db7f64ab-58d1-4a8e-a3dc-87577614facb",
       "name": "Get pending proposals",
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        272,
-        448
+        288,
+        560
       ],
       "alwaysOutputData": true
     },
     {
       "parameters": {
-        "jsCode": "// Keep only this user's pending scheduler rows whose ids were approved.\n// The stored action is used as-is; nothing here re-writes it.\nconst input = $('When approved').first().json;\nconst user_id = String(input.user_id || '');\nlet ids = input.proposal_ids;\nif (typeof ids === 'string') { try { ids = JSON.parse(ids); } catch (e) { ids = ids.split(','); } }\nif (!Array.isArray(ids)) ids = ids ? [ids] : [];\nids = ids.map(s => String(s).trim()).filter(Boolean);\nconst rows = $input.all().map(i => i.json)\n  .filter(r => r.proposal_id && String(r.user_id) === user_id && r.status === 'pending' && ids.includes(r.proposal_id));\nconst out = [];\nconst bad = [];\nfor (const r of rows) {\n  let act;\n  try { act = JSON.parse(r.action); } catch (e) { bad.push(r.proposal_id); continue; }\n  out.push({ json: { proposal_id: r.proposal_id, user_id: r.user_id, type: act.type, summary: r.summary, act } });\n}\nif (!out.length) {\n  return [{ json: { type: 'none', proposal_id: ids.join(','),\n    reason: bad.length ? 'Stored actions could not be read: ' + bad.join(', ') : 'No pending scheduler proposals match these ids for this user' } }];\n}\nreturn out;"
+        "jsCode": "// Keep only rows that are pending, belong to this user, and were approved by id.\n// The stored action is used as-is; nothing here re-writes it.\nconst input = $('When approved').first().json;\nconst user_id = String(input.user_id || '');\nlet ids = input.proposal_ids;\nif (typeof ids === 'string') { try { ids = JSON.parse(ids); } catch (e) { ids = ids.split(','); } }\nids = (Array.isArray(ids) ? ids : []).map(s => String(s).trim()).filter(Boolean);\nconst rows = $input.all().map(i => i.json)\n  .filter(r => r.proposal_id && String(r.user_id) === user_id && r.status === 'pending' && ids.includes(r.proposal_id));\nconst out = [];\nconst bad = [];\nfor (const r of rows) {\n  let act;\n  try { act = JSON.parse(r.action); } catch (e) { bad.push(r.proposal_id); continue; }\n  out.push({ json: { proposal_id: r.proposal_id, user_id: r.user_id, type: act.type, summary: r.summary, act } });\n}\nif (!out.length) {\n  return [{ json: { type: 'none', proposal_ids: ids,\n    reason: bad.length ? 'Stored actions could not be read: ' + bad.join(', ') : 'No pending proposals match these ids for this user' } }];\n}\nreturn out;"
       },
-      "id": "75b65628-f8a9-47ce-991c-474ad86c88d7",
+      "id": "5868a916-3655-4fd9-aff1-f190de0ab220",
       "name": "Pick approved",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        496,
-        448
+        512,
+        560
       ]
     },
     {
@@ -93,7 +94,8 @@
                       "type": "string",
                       "operation": "equals"
                     },
-                    "rightValue": "create_event"
+                    "rightValue": "create_event",
+                    "id": "09072ff7-70cf-4971-b94f-67e17ed8ed3c"
                   }
                 ],
                 "combinator": "and"
@@ -116,13 +118,14 @@
                       "type": "string",
                       "operation": "equals"
                     },
-                    "rightValue": "reschedule_event"
+                    "rightValue": "update_event",
+                    "id": "8ccff60c-c18a-4e17-858f-0069a5fe7a36"
                   }
                 ],
                 "combinator": "and"
               },
               "renameOutput": true,
-              "outputKey": "Reschedule event"
+              "outputKey": "Update event"
             },
             {
               "conditions": {
@@ -139,13 +142,38 @@
                       "type": "string",
                       "operation": "equals"
                     },
-                    "rightValue": "cancel_event"
+                    "rightValue": "send_email",
+                    "id": "3fce07f7-cceb-4ea6-bd66-d68ae8c96afe"
                   }
                 ],
                 "combinator": "and"
               },
               "renameOutput": true,
-              "outputKey": "Cancel event"
+              "outputKey": "Send email"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.type }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "create_task",
+                    "id": "dd1a5512-bab5-40ac-b57e-c624bb5e1ce0"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Create task"
             }
           ]
         },
@@ -154,13 +182,13 @@
           "renameFallbackOutput": "None or unsupported"
         }
       },
-      "id": "9a0155fc-0f5d-41fc-9de9-ba6d18db0b55",
+      "id": "085f8c7c-c68d-4f43-aa45-2f728de8b09c",
       "name": "Route by action",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
       "position": [
-        720,
-        416
+        736,
+        512
       ]
     },
     {
@@ -177,12 +205,12 @@
           "outputFormat": "availability"
         }
       },
-      "id": "a3ee057a-8980-4dff-abf4-116e90c0eb93",
+      "id": "d51006db-8f69-4ec7-8adc-1a0440261d0d",
       "name": "Re-check free/busy (new)",
       "type": "n8n-nodes-base.googleCalendar",
       "typeVersion": 1.3,
       "position": [
-        800,
+        816,
         224
       ],
       "credentials": {
@@ -217,12 +245,12 @@
         "looseTypeValidation": true,
         "options": {}
       },
-      "id": "36cd9b86-30d9-4c5c-9591-5d4086758b19",
+      "id": "d8d48f40-5002-4266-9a1d-b9eb1ae01fa0",
       "name": "Still free? (new)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1024,
+        1040,
         224
       ]
     },
@@ -237,19 +265,19 @@
         "end": "={{ $('Pick approved').item.json.act.end }}",
         "additionalFields": {
           "attendees": [
-            "={{ ($('Pick approved').item.json.act.attendees || []).filter(a => a && String(a).trim()).join(',') || ($('Pick approved').item.json.act.calendar_id || 'aiagenticlearner@gmail.com') }}"
+            "={{ ($('Pick approved').item.json.act.attendees || []).join(\",\") }}"
           ],
           "description": "={{ $('Pick approved').item.json.act.notes || '' }}",
           "sendUpdates": "all",
           "summary": "={{ $('Pick approved').item.json.act.title }}"
         }
       },
-      "id": "7f38ce89-68f8-4dcd-bee4-6862db97d49e",
+      "id": "b3ed22aa-934f-47ff-a4b0-8c0f4cee6762",
       "name": "Create event",
       "type": "n8n-nodes-base.googleCalendar",
       "typeVersion": 1.3,
       "position": [
-        1248,
+        1264,
         128
       ],
       "credentials": {
@@ -305,13 +333,13 @@
         },
         "options": {}
       },
-      "id": "8bc8fb6a-59b4-47d0-9214-bfcd72abcece",
+      "id": "69bc090e-739b-4bdb-945f-dd3b261c784d",
       "name": "Mark done",
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
         1280,
-        192
+        288
       ]
     },
     {
@@ -319,54 +347,19 @@
         "assignments": {
           "assignments": [
             {
-              "id": "d1",
-              "name": "status",
-              "type": "string",
-              "value": "done"
-            },
-            {
-              "id": "d2",
-              "name": "proposal_id",
-              "type": "string",
-              "value": "={{ $('Pick approved').item.json.proposal_id }}"
-            },
-            {
-              "id": "d3",
-              "name": "notes",
-              "type": "string",
-              "value": "={{ 'Done: ' + $('Pick approved').item.json.summary }}"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "id": "6e119e38-9836-4a2a-99c3-286a5e87b398",
-      "name": "Return done",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        1504,
-        192
-      ]
-    },
-    {
-      "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "s1",
+              "id": "b1",
               "name": "status",
               "type": "string",
               "value": "failed"
             },
             {
-              "id": "s2",
+              "id": "b2",
               "name": "proposal_id",
               "type": "string",
               "value": "={{ $('Pick approved').item.json.proposal_id }}"
             },
             {
-              "id": "s3",
+              "id": "b3",
               "name": "notes",
               "type": "string",
               "value": "The slot is no longer free. Nothing was written; the proposal stays pending."
@@ -375,12 +368,12 @@
         },
         "options": {}
       },
-      "id": "0bb5f69f-2133-4d7f-9c25-8cfbf07d1493",
+      "id": "962bbf24-79d3-4bda-99b4-81b19d8c9cba",
       "name": "Slot taken (new)",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1248,
+        1264,
         320
       ]
     },
@@ -398,12 +391,12 @@
           "outputFormat": "availability"
         }
       },
-      "id": "16298066-201d-4abf-acf2-5c0f20e6164e",
+      "id": "91de05e3-01b7-445c-98e2-16ffad466eca",
       "name": "Re-check free/busy (move)",
       "type": "n8n-nodes-base.googleCalendar",
       "typeVersion": 1.3,
       "position": [
-        800,
+        816,
         416
       ],
       "credentials": {
@@ -438,12 +431,12 @@
         "looseTypeValidation": true,
         "options": {}
       },
-      "id": "c9681af4-9d44-4960-ae78-8c548b3f0a2c",
+      "id": "d8883df4-ef9f-49df-90cf-90301cd7361c",
       "name": "Still free? (move)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1024,
+        1040,
         416
       ]
     },
@@ -457,17 +450,26 @@
         },
         "eventId": "={{ $('Pick approved').item.json.act.event_id }}",
         "updateFields": {
+          "attendeesUi": {
+            "values": {
+              "mode": "replace",
+              "attendees": [
+                "={{ ($('Pick approved').item.json.act.attendees || []).join(\",\") }}"
+              ]
+            }
+          },
           "end": "={{ $('Pick approved').item.json.act.end }}",
           "sendUpdates": "all",
-          "start": "={{ $('Pick approved').item.json.act.start }}"
+          "start": "={{ $('Pick approved').item.json.act.start }}",
+          "summary": "={{ $('Pick approved').item.json.act.title }}"
         }
       },
-      "id": "a8b5a133-e9b0-4985-a2e9-6ad9e3abbbf4",
-      "name": "Move event",
+      "id": "d15f331c-4e2c-42d6-8c46-fd03d0f11e25",
+      "name": "Update event",
       "type": "n8n-nodes-base.googleCalendar",
       "typeVersion": 1.3,
       "position": [
-        1248,
+        1264,
         320
       ],
       "credentials": {
@@ -482,19 +484,19 @@
         "assignments": {
           "assignments": [
             {
-              "id": "s1",
+              "id": "b1",
               "name": "status",
               "type": "string",
               "value": "failed"
             },
             {
-              "id": "s2",
+              "id": "b2",
               "name": "proposal_id",
               "type": "string",
               "value": "={{ $('Pick approved').item.json.proposal_id }}"
             },
             {
-              "id": "s3",
+              "id": "b3",
               "name": "notes",
               "type": "string",
               "value": "The slot is no longer free. Nothing was written; the proposal stays pending."
@@ -503,40 +505,63 @@
         },
         "options": {}
       },
-      "id": "8b2ab15a-0be4-4548-a362-8feb407c4dbd",
+      "id": "1d7e0669-4ac9-44a4-907f-65f5b4d83c51",
       "name": "Slot taken (move)",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1248,
+        1264,
         512
       ]
     },
     {
       "parameters": {
-        "operation": "delete",
-        "calendar": {
-          "__rl": true,
-          "mode": "id",
-          "value": "={{ $('Pick approved').item.json.act.calendar_id || 'primary' }}"
-        },
-        "eventId": "={{ $('Pick approved').item.json.act.event_id }}",
+        "sendTo": "={{ ($('Pick approved').item.json.act.to || []).join(\", \") }}",
+        "subject": "={{ $('Pick approved').item.json.act.subject }}",
+        "emailType": "text",
+        "message": "={{ $('Pick approved').item.json.act.body }}",
         "options": {
-          "sendUpdates": "all"
+          "appendAttribution": false,
+          "ccList": "={{ ($('Pick approved').item.json.act.cc || []).join(\", \") }}"
         }
       },
-      "id": "df59609a-ab40-45c9-a320-2185e3747523",
-      "name": "Cancel event",
-      "type": "n8n-nodes-base.googleCalendar",
-      "typeVersion": 1.3,
+      "id": "a303eb6c-bfb2-4277-b8b4-b851d8ad3481",
+      "name": "Send email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
       "position": [
         912,
         384
       ],
+      "webhookId": "13a80c9f-0dd3-471d-9451-1edd773d9f75",
       "credentials": {
-        "googleCalendarOAuth2Api": {
-          "id": "FGqp1UtTPeBwJuII",
-          "name": "Google Calendar account"
+        "gmailOAuth2": {
+          "id": "2lEeYirZIRz3xJJ9",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "task": "@default",
+        "title": "={{ $('Pick approved').item.json.act.title }}",
+        "additionalFields": {
+          "dueDate": "={{ $('Pick approved').item.json.act.due || $now.plus(1, 'day').toISO() }}",
+          "notes": "={{ $('Pick approved').item.json.act.notes || '' }}"
+        }
+      },
+      "id": "0d18392d-b5eb-486f-a54a-0b18486e4919",
+      "name": "Create task",
+      "type": "n8n-nodes-base.googleTasks",
+      "typeVersion": 1,
+      "position": [
+        912,
+        576
+      ],
+      "credentials": {
+        "googleTasksOAuth2Api": {
+          "id": "N8oH9DHHFg5YxEfo",
+          "name": "Google Tasks account"
         }
       }
     },
@@ -566,13 +591,13 @@
         },
         "options": {}
       },
-      "id": "8c017bd5-67f1-4657-8843-8e085b7bddee",
+      "id": "0dc281d5-01c1-40c6-b748-4071a4516a5e",
       "name": "Return failed",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
         912,
-        576
+        768
       ]
     }
   ],
@@ -629,7 +654,14 @@
         ],
         [
           {
-            "node": "Cancel event",
+            "node": "Send email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create task",
             "type": "main",
             "index": 0
           }
@@ -683,17 +715,6 @@
         ]
       ]
     },
-    "Mark done": {
-      "main": [
-        [
-          {
-            "node": "Return done",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Re-check free/busy (move)": {
       "main": [
         [
@@ -709,7 +730,7 @@
       "main": [
         [
           {
-            "node": "Move event",
+            "node": "Update event",
             "type": "main",
             "index": 0
           }
@@ -723,7 +744,7 @@
         ]
       ]
     },
-    "Move event": {
+    "Update event": {
       "main": [
         [
           {
@@ -734,7 +755,18 @@
         ]
       ]
     },
-    "Cancel event": {
+    "Send email": {
+      "main": [
+        [
+          {
+            "node": "Mark done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create task": {
       "main": [
         [
           {
@@ -752,53 +784,44 @@
     "binaryMode": "separate",
     "errorWorkflow": "mgTS3Y2KolpDdVX0"
   },
-  "versionId": "75333fc1-7090-40d8-aef3-d3d1ec846214",
+  "versionId": "35c9adf3-496f-4983-867d-099dc56b3ab0",
   "meta": {
     "instanceId": "ec4f3655d17daa19a5288cbca637de661f51f490a4e49ce8a984f9e8ea511425"
   },
   "nodeGroups": [
     {
-      "id": "8fdbd6b3-c0ac-4bf5-9554-26828769a5b5",
+      "id": "2f1c9634-e39d-4eeb-bf6b-9ef91894db25",
       "name": "Load approved actions",
       "nodeIds": [
-        "37129c8d-6938-49a4-bda5-dc51866b8aae",
-        "75b65628-f8a9-47ce-991c-474ad86c88d7",
-        "9a0155fc-0f5d-41fc-9de9-ba6d18db0b55"
+        "db7f64ab-58d1-4a8e-a3dc-87577614facb",
+        "5868a916-3655-4fd9-aff1-f190de0ab220",
+        "085f8c7c-c68d-4f43-aa45-2f728de8b09c"
       ],
-      "description": "Takes the approved ids and keeps only this user's pending scheduler rows, then routes each stored action by type"
+      "description": "Takes the approved ids and keeps only this user's pending rows, then routes each stored action by type"
     },
     {
-      "id": "e5dba47a-0a68-42b5-b8fe-151ee972ffee",
+      "id": "1bc7d779-7a48-461a-9d2d-127d4ae6ffd4",
       "name": "Book new meeting",
       "nodeIds": [
-        "a3ee057a-8980-4dff-abf4-116e90c0eb93",
-        "36cd9b86-30d9-4c5c-9591-5d4086758b19",
-        "7f38ce89-68f8-4dcd-bee4-6862db97d49e",
-        "0bb5f69f-2133-4d7f-9c25-8cfbf07d1493"
+        "d51006db-8f69-4ec7-8adc-1a0440261d0d",
+        "d8d48f40-5002-4266-9a1d-b9eb1ae01fa0",
+        "b3ed22aa-934f-47ff-a4b0-8c0f4cee6762",
+        "962bbf24-79d3-4bda-99b4-81b19d8c9cba"
       ],
       "description": "Confirms the stored slot is still free right before booking; a taken slot is reported and left pending"
     },
     {
-      "id": "95e9461b-d277-49f8-95b0-1ea3ee84997c",
+      "id": "18a0cbf2-eb8f-48ac-8169-4b6feef8f9be",
       "name": "Reschedule meeting",
       "nodeIds": [
-        "16298066-201d-4abf-acf2-5c0f20e6164e",
-        "c9681af4-9d44-4960-ae78-8c548b3f0a2c",
-        "a8b5a133-e9b0-4985-a2e9-6ad9e3abbbf4",
-        "8b2ab15a-0be4-4548-a362-8feb407c4dbd"
+        "91de05e3-01b7-445c-98e2-16ffad466eca",
+        "d8883df4-ef9f-49df-90cf-90301cd7361c",
+        "d15f331c-4e2c-42d6-8c46-fd03d0f11e25",
+        "1d7e0669-4ac9-44a4-907f-65f5b4d83c51"
       ],
-      "description": "Confirms the new slot is still free, then moves only the time; title, attendees and notes stay as they are"
-    },
-    {
-      "id": "253753b5-24c5-4927-bacb-2628e0afd37a",
-      "name": "Record result",
-      "nodeIds": [
-        "8bc8fb6a-59b4-47d0-9214-bfcd72abcece",
-        "6e119e38-9836-4a2a-99c3-286a5e87b398"
-      ],
-      "description": "Marks each applied proposal done so it cannot run twice, and reports it back to the router"
+      "description": "Confirms the new slot is still free, then moves the meeting with the stored time, title and attendees"
     }
   ],
-  "id": "ltULLA6OTr7Ytr69",
+  "id": "FoG2296FZmPnjcOS",
   "tags": []
 }

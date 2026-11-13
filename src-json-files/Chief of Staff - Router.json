@@ -524,7 +524,7 @@
     },
     {
       "parameters": {
-        "message": "=About to run {{ $tool.name }} with {{ JSON.stringify($tool.parameters) }}. Approve?",
+        "message": "Approve or decline?",
         "approvalOptions": {
           "values": {
             "approvalType": "double"
@@ -540,7 +540,7 @@
         2592,
         -1680
       ],
-      "webhookId": "62378365-653d-4971-8434-378dabec7ebe"
+      "webhookId": "46ed69eb-a9bd-4048-94ff-9736c24713a9"
     },
     {
       "parameters": {
@@ -711,7 +711,7 @@
         2960,
         -1904
       ],
-      "webhookId": "3c8478b4-bb01-4217-bd7f-2404a484b24e"
+      "webhookId": "339cf1a7-eacf-4dd1-8027-0972fcc6342f"
     },
     {
       "parameters": {
@@ -1048,7 +1048,7 @@
         2272,
         -1328
       ],
-      "webhookId": "75fd7e54-651b-4114-9b9b-53c0be6467c1",
+      "webhookId": "9351cabf-f380-4804-8841-6c41f0f88164",
       "credentials": {
         "slackOAuth2Api": {
           "id": "vz4wy58TLlPUA2aJ",
@@ -1124,7 +1124,7 @@
         2272,
         -1136
       ],
-      "webhookId": "acd22ce7-4169-4aa1-a988-254a5c2df2a7",
+      "webhookId": "4b6d97e1-bce8-4a99-98a8-ffdcadfe5760",
       "credentials": {
         "slackOAuth2Api": {
           "id": "vz4wy58TLlPUA2aJ",
@@ -1200,7 +1200,7 @@
         2272,
         -944
       ],
-      "webhookId": "7bd35623-9244-4342-b069-2cdffb41fe9c",
+      "webhookId": "71756e1a-f68a-49db-b879-b4f7bf9a897b",
       "credentials": {
         "slackOAuth2Api": {
           "id": "vz4wy58TLlPUA2aJ",
@@ -1462,7 +1462,7 @@
         2800,
         -1616
       ],
-      "webhookId": "bcfcb801-fffc-4221-95da-a6758b8185a1",
+      "webhookId": "fa7cbdf2-f863-4ed8-a321-2f1970a6491b",
       "credentials": {
         "slackOAuth2Api": {
           "id": "vz4wy58TLlPUA2aJ",
@@ -1582,7 +1582,7 @@
         -1712
       ],
       "executeOnce": true,
-      "webhookId": "8cb7b603-f934-452d-bf2c-f2cb0b853d8f",
+      "webhookId": "65ccf92f-1196-4ce2-a799-d529a5ffe4f2",
       "credentials": {
         "slackOAuth2Api": {
           "id": "vz4wy58TLlPUA2aJ",
@@ -1705,7 +1705,7 @@
         -1520
       ],
       "executeOnce": true,
-      "webhookId": "fcf9e408-4f59-4458-ba2a-e6b297302e37",
+      "webhookId": "6438526d-ab05-4d72-ad4d-2d02b3aff70f",
       "credentials": {
         "slackOAuth2Api": {
           "id": "vz4wy58TLlPUA2aJ",
@@ -1736,7 +1736,7 @@
         2800,
         -1424
       ],
-      "webhookId": "0d53901e-e094-4569-83de-dd0e531708f7",
+      "webhookId": "98ab668b-579e-4983-bc6f-440fb6e9ae9f",
       "credentials": {
         "slackOAuth2Api": {
           "id": "vz4wy58TLlPUA2aJ",
@@ -1767,7 +1767,7 @@
         2496,
         -656
       ],
-      "webhookId": "522e9619-e56d-4846-9e57-13ac5fa01d46",
+      "webhookId": "98e0477d-0d6a-41ee-b7a9-eb7423471c5e",
       "credentials": {
         "slackOAuth2Api": {
           "id": "vz4wy58TLlPUA2aJ",
@@ -1798,7 +1798,7 @@
         2048,
         -368
       ],
-      "webhookId": "b7456a91-2994-4fcd-9e81-f3e068a22857",
+      "webhookId": "7f2ad4e5-408f-47c4-be3a-78d460a4e96d",
       "credentials": {
         "slackOAuth2Api": {
           "id": "vz4wy58TLlPUA2aJ",
@@ -2077,7 +2077,51 @@
         2720,
         -1616
       ],
-      "webhookId": "b31208f5-7eba-490c-9af2-ff748c2cdeb8",
+      "webhookId": "c71018ba-1f36-4ae2-9e15-3473f1519892",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "vz4wy58TLlPUA2aJ",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "b70e7bfd-5825-4c96-b8d8-a03fbf038585",
+      "name": "On workflow error",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        480,
+        -1264
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "user",
+        "user": {
+          "__rl": true,
+          "mode": "list",
+          "value": "U0CGDHCSD5F",
+          "cachedResultName": "prashanth babu (@aiagenticlearner)"
+        },
+        "text": "=:rotating_light: *Workflow failed:* {{ $json.workflow?.name || \"Unknown workflow\" }}\n*Failed node:* {{ $json.execution?.lastNodeExecuted || $json.trigger?.error?.node?.name || \"n/a\" }}\n*Error:* {{ $json.execution?.error?.message || $json.trigger?.error?.message || \"No message\" }}\n*Execution:* {{ $json.execution?.url || (\"Execution id \" + ($json.execution?.id || \"n/a\")) }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "9c96f32f-f122-4abe-8efc-b18e7c85a186",
+      "name": "Alert owner on Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.7,
+      "position": [
+        704,
+        -1264
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "webhookId": "494ec17f-5f9d-4229-bc4e-7d6aaaeac1d7",
       "credentials": {
         "slackOAuth2Api": {
           "id": "vz4wy58TLlPUA2aJ",
@@ -2647,9 +2691,15 @@
         ]
       ]
     },
-    "Reply in chat": {
+    "On workflow error": {
       "main": [
-        []
+        [
+          {
+            "node": "Alert owner on Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     }
   },
@@ -2660,7 +2710,7 @@
     "timezone": "Asia/Kolkata",
     "errorWorkflow": "mgTS3Y2KolpDdVX0"
   },
-  "versionId": "ec7182d5-ba1b-4616-b2a4-72f8e2df959f",
+  "versionId": "bec58140-b856-474a-aebb-70d7e4bb86d1",
   "meta": {
     "instanceId": "ec4f3655d17daa19a5288cbca637de661f51f490a4e49ce8a984f9e8ea511425"
   },
