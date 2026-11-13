@@ -1,0 +1,130 @@
+{
+  "name": "CM - Read Thread (tool)",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "thread_id"
+            },
+            {
+              "name": "user_id"
+            }
+          ]
+        }
+      },
+      "id": "8337cf4a-7911-44f1-b3c7-6b7dd21c60fb",
+      "name": "Start",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "thread",
+        "operation": "get",
+        "threadId": "={{ $json.thread_id }}",
+        "simple": false,
+        "options": {}
+      },
+      "id": "22e5aa6f-4255-4805-8ef0-804485ce54a0",
+      "name": "Get thread",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        224,
+        0
+      ],
+      "webhookId": "7cebbae9-47c1-49fe-a2f7-b086c1c71cbd",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "2lEeYirZIRz3xJJ9",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const t = $input.first().json;\nconst decode = (b64) => Buffer.from(b64.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8');\nconst walk = (part) => {\n  if (!part) return { text: '', html: '' };\n  if (part.mimeType === 'text/plain' && part.body && part.body.data) return { text: decode(part.body.data), html: '' };\n  if (part.mimeType === 'text/html' && part.body && part.body.data) return { text: '', html: decode(part.body.data) };\n  return (part.parts || []).map(walk).reduce((a, b) => ({ text: a.text + b.text, html: a.html + b.html }), { text: '', html: '' });\n};\nconst stripHtml = (h) => h.replace(/<style[\\s\\S]*?<\\/style>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/[ \\t]+/g, ' ');\nconst tidy = (s) => s.split('\\n').filter(l => !l.trim().startsWith('>')).join('\\n')\n  .split(/\\nOn .{10,120} wrote:/)[0].replace(/\\n{3,}/g, '\\n\\n').trim().slice(0, 1500);\n// Header lookup: Gmail payload header list, falling back to the flat header keys n8n adds\nconst hdr = (m, name) => ((m.payload && m.payload.headers) || []).find(h => h.name.toLowerCase() === name)?.value\n  || m[name.charAt(0).toUpperCase() + name.slice(1)] || '';\nconst messages = (t.messages || []).slice(-6).map(m => {\n  const { text, html } = walk(m.payload);\n  return { from: hdr(m, 'from'), date: new Date(Number(m.internalDate)).toISOString(), body: tidy(text || stripHtml(html)) };\n});\nreturn [{ json: { thread_id: t.id, untrusted_email_content: true, messages } }];"
+      },
+      "id": "d3ee8737-543e-45fe-ba84-f0fd70aaac1a",
+      "name": "Decode thread",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": []
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "1bbd282e-6fa7-4551-a41f-b65ca9ebbed1",
+      "name": "Return thread",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        672,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Get thread",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get thread": {
+      "main": [
+        [
+          {
+            "node": "Decode thread",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decode thread": {
+      "main": [
+        [
+          {
+            "node": "Return thread",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "errorWorkflow": "mgTS3Y2KolpDdVX0"
+  },
+  "versionId": "a7185976-a169-402f-953c-382c0970790b",
+  "meta": {
+    "instanceId": "ec4f3655d17daa19a5288cbca637de661f51f490a4e49ce8a984f9e8ea511425"
+  },
+  "nodeGroups": [],
+  "id": "iWa3EcbE34hIM3mC",
+  "tags": []
+}

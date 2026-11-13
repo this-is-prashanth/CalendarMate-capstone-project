@@ -1,0 +1,418 @@
+{
+  "name": "Email agent (execute)",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "user_id"
+            },
+            {
+              "name": "proposal_ids"
+            }
+          ]
+        }
+      },
+      "id": "5af21e1a-2f30-4cfa-8f88-eeda86205484",
+      "name": "When approved",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "5NcIttwxWCVGLBLB",
+          "cachedResultName": "pending_proposals"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "user_id",
+              "keyValue": "={{ $json.user_id }}"
+            },
+            {
+              "keyName": "status",
+              "keyValue": "pending"
+            },
+            {
+              "keyName": "agent",
+              "keyValue": "email"
+            }
+          ]
+        },
+        "returnAll": true
+      },
+      "id": "3974fc97-a449-4480-83c7-1f7c2087212f",
+      "name": "Get pending proposals",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        272,
+        224
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Keep only this user's pending email rows whose ids were approved.\n// The stored action is used as-is; nothing here re-writes it.\nconst input = $('When approved').first().json;\nconst user_id = String(input.user_id || '');\nlet ids = input.proposal_ids;\nif (typeof ids === 'string') { try { ids = JSON.parse(ids); } catch (e) { ids = ids.split(','); } }\nif (!Array.isArray(ids)) ids = ids ? [ids] : [];\nids = ids.map(s => String(s).trim()).filter(Boolean);\nconst rows = $input.all().map(i => i.json)\n  .filter(r => r.proposal_id && String(r.user_id) === user_id && r.status === 'pending' && ids.includes(r.proposal_id));\nconst out = [];\nconst bad = [];\nfor (const r of rows) {\n  let act;\n  try { act = JSON.parse(r.action); } catch (e) { bad.push(r.proposal_id); continue; }\n  out.push({ json: { proposal_id: r.proposal_id, user_id: r.user_id, type: act.action || act.type, summary: r.summary, act } });\n}\nif (!out.length) {\n  return [{ json: { type: 'none', proposal_id: ids.join(','),\n    reason: bad.length ? 'Stored actions could not be read: ' + bad.join(', ') : 'No pending email proposals match these ids for this user' } }];\n}\nreturn out;"
+      },
+      "id": "dd10aca7-6ffd-4f09-9354-14248b5f3d92",
+      "name": "Pick approved",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        496,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.type === 'send_draft' && !!($json.act && $json.act.draft_id) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "644fab74-ecd5-4515-930e-8ed47c560e5d",
+      "name": "Is a draft to send?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        752,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://gmail.googleapis.com/gmail/v1/users/me/drafts/send",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "gmailOAuth2",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ id: $json.act.draft_id }) }}",
+        "options": {}
+      },
+      "id": "3d3ae04b-95c9-44f9-aafe-162c19c6634b",
+      "name": "Send draft",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1024,
+        224
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "2lEeYirZIRz3xJJ9",
+          "name": "Gmail account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "5NcIttwxWCVGLBLB",
+          "cachedResultName": "pending_proposals"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "proposal_id",
+              "keyValue": "={{ $('Pick approved').item.json.proposal_id }}"
+            },
+            {
+              "keyName": "user_id",
+              "keyValue": "={{ $('Pick approved').item.json.user_id }}"
+            },
+            {
+              "keyName": "status",
+              "keyValue": "pending"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "6de3db56-0bd6-4d92-8644-d17e89388961",
+      "name": "Mark done",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1248,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d1",
+              "name": "status",
+              "type": "string",
+              "value": "done"
+            },
+            {
+              "id": "d2",
+              "name": "proposal_id",
+              "type": "string",
+              "value": "={{ $('Pick approved').item.json.proposal_id }}"
+            },
+            {
+              "id": "d3",
+              "name": "notes",
+              "type": "string",
+              "value": "={{ 'Sent: ' + $('Pick approved').item.json.summary }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "657c7739-3874-4e0d-81a0-b3f708a71079",
+      "name": "Return done",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1472,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f1",
+              "name": "status",
+              "type": "string",
+              "value": "failed"
+            },
+            {
+              "id": "f2",
+              "name": "proposal_id",
+              "type": "string",
+              "value": "={{ $('Pick approved').item.json.proposal_id }}"
+            },
+            {
+              "id": "f3",
+              "name": "notes",
+              "type": "string",
+              "value": "={{ 'Gmail could not send the draft (it may have been deleted or already sent). The proposal stays pending. ' + JSON.stringify($json).slice(0, 300) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2f4c88d1-84b6-4170-9cac-17b2fab00858",
+      "name": "Send failed",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1248,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "r1",
+              "name": "status",
+              "type": "string",
+              "value": "failed"
+            },
+            {
+              "id": "r2",
+              "name": "proposal_id",
+              "type": "string",
+              "value": "={{ $json.proposal_id || \"\" }}"
+            },
+            {
+              "id": "r3",
+              "name": "notes",
+              "type": "string",
+              "value": "={{ $json.reason || (\"Unsupported email action: \" + $json.type) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f9856f32-76e7-450d-a1cb-496adc73ea1f",
+      "name": "Return failed",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1136,
+        192
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When approved": {
+      "main": [
+        [
+          {
+            "node": "Get pending proposals",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get pending proposals": {
+      "main": [
+        [
+          {
+            "node": "Pick approved",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick approved": {
+      "main": [
+        [
+          {
+            "node": "Is a draft to send?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is a draft to send?": {
+      "main": [
+        [
+          {
+            "node": "Send draft",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send draft": {
+      "main": [
+        [
+          {
+            "node": "Mark done",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark done": {
+      "main": [
+        [
+          {
+            "node": "Return done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "errorWorkflow": "mgTS3Y2KolpDdVX0"
+  },
+  "versionId": "a1b4fa4b-90c4-48f7-b8f1-7ff08ff6886a",
+  "meta": {
+    "instanceId": "ec4f3655d17daa19a5288cbca637de661f51f490a4e49ce8a984f9e8ea511425"
+  },
+  "nodeGroups": [
+    {
+      "id": "e9005e29-1910-4d21-bc1c-b5e3e3fec872",
+      "name": "Find approved drafts",
+      "nodeIds": [
+        "3974fc97-a449-4480-83c7-1f7c2087212f",
+        "dd10aca7-6ffd-4f09-9354-14248b5f3d92"
+      ],
+      "description": "Reads this user's pending email proposals and keeps only the ids approved in chat or Slack"
+    },
+    {
+      "id": "6b5f51bb-e3e6-4192-9d36-7d2926385e27",
+      "name": "Send and record",
+      "nodeIds": [
+        "3d3ae04b-95c9-44f9-aafe-162c19c6634b",
+        "6de3db56-0bd6-4d92-8644-d17e89388961",
+        "657c7739-3874-4e0d-81a0-b3f708a71079",
+        "2f4c88d1-84b6-4170-9cac-17b2fab00858"
+      ],
+      "description": "Sends the saved Gmail draft, marks the proposal done; if Gmail refuses, the proposal stays pending"
+    }
+  ],
+  "id": "Uu1sdCpnZpJ8v8co",
+  "tags": []
+}
