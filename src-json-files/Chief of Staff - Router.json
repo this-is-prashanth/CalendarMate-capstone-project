@@ -4,7 +4,7 @@
     {
       "parameters": {
         "public": true,
-        "initialMessages": "Hi, what do you need help with today?",
+        "initialMessages": "Hi, Welcome to CalendarMate.\n\nI am your Assistant who can help you with your email, calendar, slack triage. \n",
         "options": {
           "responseMode": "responseNodes"
         }
@@ -2710,7 +2710,7 @@
     "timezone": "Asia/Kolkata",
     "errorWorkflow": "mgTS3Y2KolpDdVX0"
   },
-  "versionId": "bec58140-b856-474a-aebb-70d7e4bb86d1",
+  "versionId": "7ee7f4b7-33b3-4a4e-8ea1-154712da3b9e",
   "meta": {
     "instanceId": "ec4f3655d17daa19a5288cbca637de661f51f490a4e49ce8a984f9e8ea511425"
   },
