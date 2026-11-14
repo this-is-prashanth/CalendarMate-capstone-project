@@ -9,13 +9,13 @@
           "responseMode": "responseNodes"
         }
       },
-      "id": "6cc71ff6-288b-47ca-a6a6-dd10d022e186",
+      "id": "4fb07ecb-afe6-4fe0-9f98-954bdbec400a",
       "name": "Chat with router",
       "type": "@n8n/n8n-nodes-langchain.chatTrigger",
       "typeVersion": 1.5,
       "position": [
         0,
-        -2144
+        320
       ],
       "webhookId": "e3f0de44-782c-460e-8cc9-d1afc3026800"
     },
@@ -45,24 +45,24 @@
         },
         "options": {}
       },
-      "id": "83f1af4a-f03f-4f78-a0e6-cd378f4544d7",
+      "id": "d95a0d63-473b-40be-b029-350ade2ed05b",
       "name": "Chat input fields",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
         384,
-        -2144
+        320
       ]
     },
     {
       "parameters": {},
-      "id": "a839e894-9089-4524-b72d-38ca95afe437",
+      "id": "d075a3fd-aaad-4c79-9528-2baa72367593",
       "name": "Normalize input",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
       "position": [
         816,
-        -1952
+        640
       ]
     },
     {
@@ -71,7 +71,7 @@
         "dataTableId": {
           "__rl": true,
           "mode": "id",
-          "value": "WCuHtLBeLnFmdhTc",
+          "value": "lZ0uMKyNOfKbXG4B",
           "cachedResultName": "user_profiles"
         },
         "filters": {
@@ -88,13 +88,13 @@
         },
         "limit": 1
       },
-      "id": "25f17b59-7095-436d-88a9-b0ad9297c687",
+      "id": "3cdeb6a3-2f20-4fbe-8f05-343234817134",
       "name": "Load profile",
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
         1040,
-        -1952
+        640
       ]
     },
     {
@@ -189,13 +189,13 @@
         },
         "options": {}
       },
-      "id": "aafeb261-8b16-4058-aba7-4694d1424142",
+      "id": "d3b4d2b2-cbac-45ef-9722-185537e5d320",
       "name": "Build runtime vars",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
         1264,
-        -1952
+        640
       ]
     },
     {
@@ -263,13 +263,13 @@
         },
         "options": {}
       },
-      "id": "27bc29bc-66e6-4c0d-bd33-1dddd40d194a",
+      "id": "0a9905c0-e573-490f-a232-e20f48428fc1",
       "name": "Route by input type",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
       "position": [
         1488,
-        -1952
+        640
       ]
     },
     {
@@ -282,13 +282,13 @@
           "returnIntermediateSteps": true
         }
       },
-      "id": "f9afe488-1d06-40dc-8608-223d9e9660e7",
+      "id": "6e99e9ff-d5eb-459e-8041-648fa4d49ee1",
       "name": "Router agent",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
       "position": [
-        2064,
-        -1904
+        1584,
+        256
       ]
     },
     {
@@ -302,17 +302,17 @@
         "builtInTools": {},
         "options": {}
       },
-      "id": "de11b2f0-37a5-4cbf-abef-245aac1d393d",
+      "id": "3efdca21-321b-4ad2-9233-404202e59781",
       "name": "OpenAI Chat Model",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.3,
       "position": [
-        1824,
-        -1680
+        1344,
+        480
       ],
       "credentials": {
         "openAiApi": {
-          "id": "LnvCgMxtM2ub3aHz",
+          "id": "alSOt4AV5ZiXdpcu",
           "name": "OpenAI account"
         }
       }
@@ -323,13 +323,13 @@
         "sessionKey": "={{ $('Build runtime vars').item.json.user_id }}",
         "contextWindowLength": 10
       },
-      "id": "80aa9d34-658f-460b-b34b-48e3b011baf5",
+      "id": "d0c0e797-0b3f-403d-bef6-54a3ceefba31",
       "name": "Simple Memory",
       "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
       "typeVersion": 1.4,
       "position": [
-        1952,
-        -1680
+        1472,
+        480
       ]
     },
     {
@@ -337,9 +337,9 @@
         "description": "Use to give the user a read-only overview: a daily or weekly brief, what is on today, or catching up across calendar, mail, chat and docs. Takes a JSON task with task_id, agent \"briefing\", goal, and inputs. Never proposes or changes anything.",
         "workflowId": {
           "__rl": true,
+          "value": "iIGccD7qUu123cZq",
           "mode": "id",
-          "value": "cckenr2E9a3hKm0Y",
-          "cachedResultName": "Briefing agent (read-only)"
+          "cachedResultUrl": "/workflow/iIGccD7qUu123cZq"
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
@@ -364,13 +364,13 @@
           "convertFieldsToString": false
         }
       },
-      "id": "2907defe-3017-4bd9-901e-6a05304811a2",
+      "id": "b2f2301f-53d9-41b3-be3a-9c48e4595d88",
       "name": "briefing",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        2080,
-        -1680
+        1600,
+        480
       ],
       "retryOnFail": true,
       "maxTries": 3,
@@ -381,9 +381,9 @@
         "description": "Use to find free time or propose a booking, reschedule or cancellation. Takes a JSON task with task_id, agent \"scheduler\", goal, and inputs (attendees, time window, duration). Never books or changes the calendar. Returns proposed_actions, each with a proposal_id.",
         "workflowId": {
           "__rl": true,
+          "value": "p2sifVv6QYLihxNO",
           "mode": "id",
-          "value": "w2UzML7nklRfhj9G",
-          "cachedResultName": "Scheduler agent (propose)"
+          "cachedResultUrl": "/workflow/p2sifVv6QYLihxNO"
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
@@ -400,7 +400,8 @@
               "defaultMatch": false,
               "display": true,
               "canBeUsedToMatch": true,
-              "type": "string"
+              "type": "string",
+              "removed": false
             },
             {
               "id": "task",
@@ -409,20 +410,20 @@
               "defaultMatch": false,
               "display": true,
               "canBeUsedToMatch": true,
-              "type": "string"
+              "removed": false
             }
           ],
           "attemptToConvertTypes": false,
           "convertFieldsToString": false
         }
       },
-      "id": "f71b6f16-2fa1-42e1-a862-3f1325165950",
+      "id": "63ce7666-4f76-4110-9c9b-dccae1bef5f2",
       "name": "scheduler_propose",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        2208,
-        -1680
+        1728,
+        480
       ],
       "retryOnFail": true,
       "maxTries": 3,
@@ -433,9 +434,9 @@
         "description": "Use to triage the inbox, summarize a thread, find meeting requests or action items in mail, or draft a reply. Takes a JSON task with task_id, agent \"email\", goal, and inputs (time window, thread ids, sender names). Saves drafts but never sends. Returns a ranked summary and proposed_actions, each with a proposal_id.",
         "workflowId": {
           "__rl": true,
+          "value": "Z1BP0hxBNZf9myUP",
           "mode": "id",
-          "value": "P5GIR5ELe7XhMfbG",
-          "cachedResultName": "CM - Email (propose)"
+          "cachedResultUrl": "/workflow/Z1BP0hxBNZf9myUP"
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
@@ -468,13 +469,13 @@
           "convertFieldsToString": false
         }
       },
-      "id": "1e8fb344-dc83-4028-9e75-c83e914a6fe8",
+      "id": "62c9b1c5-59cf-47ee-8fa0-c2273964dd04",
       "name": "email_propose",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        2336,
-        -1680
+        1856,
+        480
       ],
       "retryOnFail": true,
       "maxTries": 3,
@@ -485,9 +486,9 @@
         "description": "Use to capture follow-ups after a meeting or conversation, find open commitments, or draft recap emails and tasks. Takes a JSON task with task_id, user_id, agent \"follow_up\", goal, and inputs (meeting, notes, people). Never sends or creates anything. Returns proposed_actions, each with a proposal_id.",
         "workflowId": {
           "__rl": true,
+          "value": "2cYTXjDIP5Ox4ood",
           "mode": "id",
-          "value": "UICqKzr9q4PJ2bDn",
-          "cachedResultName": "Follow-up agent (propose)"
+          "cachedResultUrl": "/workflow/2cYTXjDIP5Ox4ood"
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
@@ -510,13 +511,13 @@
           "convertFieldsToString": false
         }
       },
-      "id": "3a4ec22e-109e-4328-9e55-82a28951d30a",
+      "id": "74d57b76-40b4-4844-9c84-3102f5e5a10a",
       "name": "followup_propose",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        2464,
-        -1680
+        1984,
+        480
       ],
       "retryOnFail": true,
       "maxTries": 3,
@@ -532,24 +533,24 @@
         },
         "options": {}
       },
-      "id": "66bdaf2d-f1cb-460c-82bf-afbb32d10e7f",
+      "id": "6b272261-1b7f-47ac-83a3-747d280b4282",
       "name": "approve_execution",
       "type": "@n8n/n8n-nodes-langchain.chatHitlTool",
       "typeVersion": 1.3,
       "position": [
-        2592,
-        -1680
+        2112,
+        480
       ],
-      "webhookId": "46ed69eb-a9bd-4048-94ff-9736c24713a9"
+      "webhookId": "4dcea5a1-06d7-4de6-9fe6-f7c5e937340c"
     },
     {
       "parameters": {
         "description": "Use only with scheduler proposal ids the user approved in their latest message. Books, moves or cancels exactly those calendar proposals. Never call it with ids the user has not approved.",
         "workflowId": {
           "__rl": true,
+          "value": "bLajRfm7zM7nPnUr",
           "mode": "id",
-          "value": "ltULLA6OTr7Ytr69",
-          "cachedResultName": "Scheduler agent (execute)"
+          "cachedResultUrl": "/workflow/bLajRfm7zM7nPnUr"
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
@@ -582,13 +583,13 @@
           "convertFieldsToString": false
         }
       },
-      "id": "4b50e809-72cd-4001-b19a-d4073f20e070",
+      "id": "37b6db6e-5d13-434f-a025-5edf24aef7d8",
       "name": "scheduler_execute",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        2480,
-        -1472
+        2000,
+        688
       ],
       "retryOnFail": true,
       "maxTries": 3,
@@ -599,9 +600,9 @@
         "description": "Use only with email proposal ids the user approved in their latest message. Sends exactly those approved drafts. Never call it with ids the user has not approved.",
         "workflowId": {
           "__rl": true,
+          "value": "69h56LOKV7qaAMQA",
           "mode": "id",
-          "value": "Uu1sdCpnZpJ8v8co",
-          "cachedResultName": "Email agent (execute)"
+          "cachedResultUrl": "/workflow/69h56LOKV7qaAMQA"
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
@@ -634,13 +635,13 @@
           "convertFieldsToString": false
         }
       },
-      "id": "8814dcf9-4329-4cc2-aa2c-929c5efbda23",
+      "id": "301148fe-09de-4361-912f-b19892426695",
       "name": "email_execute",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        2608,
-        -1472
+        2128,
+        688
       ],
       "retryOnFail": true,
       "maxTries": 3,
@@ -651,9 +652,9 @@
         "description": "Use only with follow-up proposal ids the user approved in their latest message. Sends, books or creates exactly those approved follow-ups. Never call it with ids the user has not approved.",
         "workflowId": {
           "__rl": true,
+          "value": "V3HgMNH4yEodJI37",
           "mode": "id",
-          "value": "FoG2296FZmPnjcOS",
-          "cachedResultName": "Follow-up agent (execute)"
+          "cachedResultUrl": "/workflow/V3HgMNH4yEodJI37"
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
@@ -686,13 +687,13 @@
           "convertFieldsToString": false
         }
       },
-      "id": "be68b2e1-c77b-4c62-81cb-ad3c77f23a55",
+      "id": "b19d4a94-2cb2-400a-96e1-48208978ac67",
       "name": "followup_execute",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        2736,
-        -1472
+        2256,
+        688
       ],
       "retryOnFail": true,
       "maxTries": 3,
@@ -703,15 +704,51 @@
         "message": "={{ $json.output }}",
         "options": {}
       },
-      "id": "573e71ba-fed1-4b6f-918e-f601ff27d12a",
+      "id": "4dc0865c-23e7-4273-ae70-4a54ff970daa",
       "name": "Reply in chat",
       "type": "@n8n/n8n-nodes-langchain.chat",
       "typeVersion": 1.3,
       "position": [
-        2960,
-        -1904
+        2480,
+        160
       ],
-      "webhookId": "339cf1a7-eacf-4dd1-8027-0972fcc6342f"
+      "webhookId": "7dbd2288-62f6-4c15-b440-a679d27e3bc3"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://cloud.langfuse.com/api/public/otel/v1/traces",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "langfuseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-langfuse-ingestion-version",
+              "value": "4"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ (() => { const hex = (n) => Array.from({ length: n }, () => Math.floor(Math.random() * 16).toString(16)).join(\"\"); const str = (k, v) => ({ key: k, value: { stringValue: String(v) } }); const vars = $(\"Build runtime vars\").first().json; const out = $json.output || \"\"; const steps = Array.isArray($json.intermediateSteps) ? $json.intermediateSteps : []; const endMs = Date.now(); const startMs = endMs - 1000 * Math.max(1, steps.length + 1); const ns = (ms) => String(ms) + \"000000\"; const traceId = hex(32); const rootId = hex(16); const rootAttrs = [str(\"langfuse.trace.name\", $workflow.name), str(\"langfuse.user.id\", vars.user_id || \"\"), str(\"langfuse.session.id\", vars.user_id || $execution.id), str(\"langfuse.trace.input\", vars.text || \"\"), str(\"langfuse.trace.output\", out), { key: \"langfuse.trace.tags\", value: { arrayValue: { values: [{ stringValue: \"n8n\" }, { stringValue: \"chief-of-staff-router\" }] } } }, str(\"n8n.execution.id\", $execution.id), str(\"n8n.workflow.id\", $workflow.id), str(\"n8n.execution.mode\", $execution.mode)]; const spans = [{ traceId, spanId: rootId, name: \"router_agent\", kind: 1, startTimeUnixNano: ns(startMs), endTimeUnixNano: ns(endMs), attributes: rootAttrs, status: { code: 1 } }]; steps.forEach((st, i) => { const a = st.action || {}; spans.push({ traceId, spanId: hex(16), parentSpanId: rootId, name: String(a.tool || \"tool\"), kind: 1, startTimeUnixNano: ns(startMs + i * 1000), endTimeUnixNano: ns(startMs + (i + 1) * 1000), attributes: [str(\"langfuse.observation.type\", \"tool\"), str(\"langfuse.observation.input\", JSON.stringify(a.toolInput || {})), str(\"langfuse.observation.output\", typeof st.observation === \"string\" ? st.observation : JSON.stringify(st.observation || \"\"))], status: { code: 1 } }); }); return JSON.stringify({ resourceSpans: [{ resource: { attributes: [str(\"service.name\", \"n8n-chief-of-staff-router\")] }, scopeSpans: [{ scope: { name: \"n8n\" }, spans }] }] }); })() }}",
+        "options": {}
+      },
+      "id": "8ab4c5eb-34d8-4dc0-ba8e-ae7416d64c6a",
+      "name": "Langfuse trace",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2480,
+        352
+      ],
+      "credentials": {
+        "langfuseApi": {
+          "id": "NScmg3aAxJmZOabD",
+          "name": "Langfuse account"
+        }
+      },
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -868,22 +905,22 @@
           "renameFallbackOutput": "unknown"
         }
       },
-      "id": "5388d16d-8b70-4196-9ebd-5cd5993cf02d",
+      "id": "4e3df7bd-050a-4dbc-aedb-fd972b8ce9f3",
       "name": "Route by trigger",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
       "position": [
-        1824,
-        -1120
+        1808,
+        1696
       ]
     },
     {
       "parameters": {
         "workflowId": {
           "__rl": true,
+          "value": "Z1BP0hxBNZf9myUP",
           "mode": "id",
-          "value": "P5GIR5ELe7XhMfbG",
-          "cachedResultName": "CM - Email (propose)"
+          "cachedResultUrl": "/workflow/Z1BP0hxBNZf9myUP"
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
@@ -921,13 +958,13 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "087913aa-ce4f-432a-a014-d8fcd5a95714",
+      "id": "3262bb46-0eb9-4ea0-980c-1b131ad8b7aa",
       "name": "Brief: triage inbox",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        2048,
-        -1712
+        2032,
+        1104
       ],
       "retryOnFail": true,
       "maxTries": 3,
@@ -937,9 +974,9 @@
       "parameters": {
         "workflowId": {
           "__rl": true,
+          "value": "2cYTXjDIP5Ox4ood",
           "mode": "id",
-          "value": "UICqKzr9q4PJ2bDn",
-          "cachedResultName": "Follow-up agent (propose)"
+          "cachedResultUrl": "/workflow/2cYTXjDIP5Ox4ood"
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
@@ -968,13 +1005,13 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "898ebd8d-c7b1-405e-a2f0-42144454397e",
+      "id": "af0de0a7-513b-45b1-a026-3ced0268f851",
       "name": "Brief: open follow-ups",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        2048,
-        -1520
+        2032,
+        1296
       ],
       "retryOnFail": true,
       "maxTries": 3,
@@ -984,9 +1021,9 @@
       "parameters": {
         "workflowId": {
           "__rl": true,
+          "value": "2cYTXjDIP5Ox4ood",
           "mode": "id",
-          "value": "UICqKzr9q4PJ2bDn",
-          "cachedResultName": "Follow-up agent (propose)"
+          "cachedResultUrl": "/workflow/2cYTXjDIP5Ox4ood"
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
@@ -1013,13 +1050,13 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "32249561-83b2-4a4f-b685-cd4e025fb314",
+      "id": "eb3a9d6b-e8de-4e0e-b4a1-d609b95f3929",
       "name": "Sweep: today's follow-ups",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        2048,
-        -1328
+        2032,
+        1488
       ],
       "retryOnFail": true,
       "maxTries": 3,
@@ -1040,18 +1077,18 @@
           "includeLinkToWorkflow": false
         }
       },
-      "id": "1724c10f-ca6d-4b32-beea-40071016794f",
+      "id": "e3bc7d99-d5d0-4143-8a49-3dd4bfa04f83",
       "name": "Send evening sweep",
       "type": "n8n-nodes-base.slack",
       "typeVersion": 2.7,
       "position": [
-        2272,
-        -1328
+        2256,
+        1488
       ],
-      "webhookId": "9351cabf-f380-4804-8841-6c41f0f88164",
+      "webhookId": "ab2d740c-d858-4b6c-be4f-a9039f23f0b4",
       "credentials": {
         "slackOAuth2Api": {
-          "id": "vz4wy58TLlPUA2aJ",
+          "id": "g6VQQ35RgmGHdNDr",
           "name": "Slack account"
         }
       }
@@ -1060,9 +1097,9 @@
       "parameters": {
         "workflowId": {
           "__rl": true,
+          "value": "iIGccD7qUu123cZq",
           "mode": "id",
-          "value": "cckenr2E9a3hKm0Y",
-          "cachedResultName": "Briefing agent (read-only)"
+          "cachedResultUrl": "/workflow/iIGccD7qUu123cZq"
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
@@ -1089,13 +1126,13 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "afda7d7d-d295-48c0-94c8-b6296f22a196",
+      "id": "bc381cf3-1985-4b6d-947a-fc475500eea4",
       "name": "Review: build weekly review",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        2048,
-        -1136
+        2032,
+        1680
       ],
       "retryOnFail": true,
       "maxTries": 3,
@@ -1116,18 +1153,18 @@
           "includeLinkToWorkflow": false
         }
       },
-      "id": "7238e216-f7fa-4055-9708-4e0ac41a11ad",
+      "id": "3dbe13ee-d0f6-4224-80c7-6abfec3deb0a",
       "name": "Send weekly review",
       "type": "n8n-nodes-base.slack",
       "typeVersion": 2.7,
       "position": [
-        2272,
-        -1136
+        2256,
+        1680
       ],
-      "webhookId": "4b6d97e1-bce8-4a99-98a8-ffdcadfe5760",
+      "webhookId": "03462191-695e-4653-9825-f589a77c9eb3",
       "credentials": {
         "slackOAuth2Api": {
-          "id": "vz4wy58TLlPUA2aJ",
+          "id": "g6VQQ35RgmGHdNDr",
           "name": "Slack account"
         }
       }
@@ -1136,9 +1173,9 @@
       "parameters": {
         "workflowId": {
           "__rl": true,
+          "value": "2cYTXjDIP5Ox4ood",
           "mode": "id",
-          "value": "UICqKzr9q4PJ2bDn",
-          "cachedResultName": "Follow-up agent (propose)"
+          "cachedResultUrl": "/workflow/2cYTXjDIP5Ox4ood"
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
@@ -1165,13 +1202,13 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "04ce3e5b-8f38-4754-9456-8613f54a25f0",
+      "id": "e02fd8aa-cc5c-422d-abd6-79d20f809acd",
       "name": "Meeting: capture follow-ups",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        2048,
-        -944
+        2032,
+        1872
       ],
       "retryOnFail": true,
       "maxTries": 3,
@@ -1192,18 +1229,18 @@
           "includeLinkToWorkflow": false
         }
       },
-      "id": "15f5fb97-d6a0-4b7b-b755-a85d0139d134",
+      "id": "2cc35aca-4c81-43f4-b5f7-3810e9ea56dc",
       "name": "Send meeting recap",
       "type": "n8n-nodes-base.slack",
       "typeVersion": 2.7,
       "position": [
-        2272,
-        -944
+        2256,
+        1872
       ],
-      "webhookId": "71756e1a-f68a-49db-b879-b4f7bf9a897b",
+      "webhookId": "8b86e891-f137-4987-ac4c-fa2097c23f47",
       "credentials": {
         "slackOAuth2Api": {
-          "id": "vz4wy58TLlPUA2aJ",
+          "id": "g6VQQ35RgmGHdNDr",
           "name": "Slack account"
         }
       }
@@ -1212,9 +1249,9 @@
       "parameters": {
         "workflowId": {
           "__rl": true,
+          "value": "Z1BP0hxBNZf9myUP",
           "mode": "id",
-          "value": "P5GIR5ELe7XhMfbG",
-          "cachedResultName": "CM - Email (propose)"
+          "cachedResultUrl": "/workflow/Z1BP0hxBNZf9myUP"
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
@@ -1251,13 +1288,13 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "33e8e594-3481-4d88-bfba-b2f8381628dd",
+      "id": "d363e319-2de9-411c-8118-381eb286505e",
       "name": "Email: triage new mail",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        2048,
-        -752
+        2032,
+        2064
       ],
       "retryOnFail": true,
       "maxTries": 3,
@@ -1287,13 +1324,13 @@
         },
         "options": {}
       },
-      "id": "de020cb5-9297-4e58-ae21-bf2f875dd756",
+      "id": "39a23642-dd28-4df9-a4b9-fc7f9d25c72e",
       "name": "Needs scheduler?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        2272,
-        -752
+        2256,
+        2064
       ]
     },
     {
@@ -1322,33 +1359,33 @@
         },
         "options": {}
       },
-      "id": "f9d9f046-910f-43dd-a937-c43714eb0b72",
+      "id": "8e62fc6a-3b4d-40eb-a006-f9afb7d13d9d",
       "name": "Scheduler task from email",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        2496,
-        -1040
+        2480,
+        1776
       ]
     },
     {
       "parameters": {},
-      "id": "be30d592-9a56-4813-8cc2-7ad07611c52b",
+      "id": "0d845ce5-c3bb-4a95-a927-ac5b91f9516a",
       "name": "Hand off to scheduling",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
       "position": [
-        2720,
-        -688
+        2704,
+        2144
       ]
     },
     {
       "parameters": {
         "workflowId": {
           "__rl": true,
+          "value": "p2sifVv6QYLihxNO",
           "mode": "id",
-          "value": "w2UzML7nklRfhj9G",
-          "cachedResultName": "Scheduler agent (propose)"
+          "cachedResultUrl": "/workflow/p2sifVv6QYLihxNO"
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
@@ -1365,7 +1402,8 @@
               "defaultMatch": false,
               "display": true,
               "canBeUsedToMatch": true,
-              "type": "string"
+              "type": "string",
+              "removed": false
             },
             {
               "id": "task",
@@ -1374,7 +1412,7 @@
               "defaultMatch": false,
               "display": true,
               "canBeUsedToMatch": true,
-              "type": "string"
+              "removed": false
             }
           ],
           "attemptToConvertTypes": false,
@@ -1385,13 +1423,13 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "532dd7a2-d7e4-44f9-9505-34ef5a1b9f6f",
+      "id": "094b7808-b73d-4060-ac0a-7497165a255a",
       "name": "Propose schedule changes",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        2352,
-        -1520
+        2816,
+        1296
       ],
       "retryOnFail": true,
       "maxTries": 3,
@@ -1420,13 +1458,13 @@
         },
         "options": {}
       },
-      "id": "c0816d83-3ca4-4d2f-8341-1904dffc672b",
+      "id": "61536b82-606f-464e-8444-c30612dbe57d",
       "name": "Has proposals?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        2576,
-        -1520
+        3040,
+        1296
       ]
     },
     {
@@ -1454,18 +1492,18 @@
           }
         }
       },
-      "id": "ba4d4da9-810e-4b56-b4f2-90009ce8411c",
+      "id": "b7b90195-b832-403a-9ec8-77f8e70f44ed",
       "name": "Ask for approval",
       "type": "n8n-nodes-base.slack",
       "typeVersion": 2.7,
       "position": [
-        2800,
-        -1616
+        3264,
+        1200
       ],
-      "webhookId": "fa7cbdf2-f863-4ed8-a321-2f1970a6491b",
+      "webhookId": "8a7eba62-fda6-412e-b117-b0a8005c0bee",
       "credentials": {
         "slackOAuth2Api": {
-          "id": "vz4wy58TLlPUA2aJ",
+          "id": "g6VQQ35RgmGHdNDr",
           "name": "Slack account"
         }
       }
@@ -1494,22 +1532,22 @@
         },
         "options": {}
       },
-      "id": "81b393f4-9da9-4141-99c8-ac7d3637e46b",
+      "id": "e5c57830-a75a-4324-8c94-cb1852ef994d",
       "name": "Approved?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        3024,
-        -1616
+        3488,
+        1200
       ]
     },
     {
       "parameters": {
         "workflowId": {
           "__rl": true,
+          "value": "bLajRfm7zM7nPnUr",
           "mode": "id",
-          "value": "ltULLA6OTr7Ytr69",
-          "cachedResultName": "Scheduler agent (execute)"
+          "cachedResultUrl": "/workflow/bLajRfm7zM7nPnUr"
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
@@ -1546,13 +1584,13 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "fbbe4994-a3ef-4297-bd6a-24b749863291",
+      "id": "dbd1f544-ea94-41f6-97f9-f69453d4c8ec",
       "name": "Run scheduler execute",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        3248,
-        -1712
+        3712,
+        1104
       ],
       "retryOnFail": true,
       "maxTries": 3,
@@ -1573,19 +1611,19 @@
           "includeLinkToWorkflow": false
         }
       },
-      "id": "7bd53dbf-8b34-460d-b1f1-3107e21a2ece",
+      "id": "023a398c-659f-4bd8-84cc-9f81c99e78e1",
       "name": "Send confirmation",
       "type": "n8n-nodes-base.slack",
       "typeVersion": 2.7,
       "position": [
-        3472,
-        -1712
+        3936,
+        1104
       ],
       "executeOnce": true,
-      "webhookId": "65ccf92f-1196-4ce2-a799-d529a5ffe4f2",
+      "webhookId": "cdfd232b-b684-47b9-b9e1-e3bba6699ad7",
       "credentials": {
         "slackOAuth2Api": {
-          "id": "vz4wy58TLlPUA2aJ",
+          "id": "g6VQQ35RgmGHdNDr",
           "name": "Slack account"
         }
       }
@@ -1604,13 +1642,13 @@
         },
         "options": {}
       },
-      "id": "201cea68-a9df-41ad-8077-a23c765c069f",
+      "id": "5266449a-8d4b-43f2-aff2-941e215782ab",
       "name": "Rejected proposal ids",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        3248,
-        -1520
+        3712,
+        1296
       ]
     },
     {
@@ -1620,13 +1658,13 @@
           "destinationFieldName": "proposal_id"
         }
       },
-      "id": "38eb72b8-85df-407f-b750-f7b10f89477f",
+      "id": "a8d04497-fe98-4df1-81c1-fcccf76b2ea2",
       "name": "One row per proposal",
       "type": "n8n-nodes-base.splitOut",
       "typeVersion": 1.1,
       "position": [
-        3472,
-        -1520
+        3936,
+        1296
       ]
     },
     {
@@ -1635,7 +1673,7 @@
         "dataTableId": {
           "__rl": true,
           "mode": "id",
-          "value": "5NcIttwxWCVGLBLB",
+          "value": "VQu5LL2NuzSKHghG",
           "cachedResultName": "pending_proposals"
         },
         "matchType": "allConditions",
@@ -1671,13 +1709,13 @@
         },
         "options": {}
       },
-      "id": "8df838cd-3dd3-4559-bd18-006174f353dc",
+      "id": "a62ef04d-c583-4971-b1e8-300a822cb629",
       "name": "Mark rejected",
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        3696,
-        -1520
+        4160,
+        1296
       ],
       "alwaysOutputData": true
     },
@@ -1696,19 +1734,19 @@
           "includeLinkToWorkflow": false
         }
       },
-      "id": "6a0d8d60-51d0-4fab-bf33-dc80f28ec363",
+      "id": "a5d0ad2b-43d2-408f-9dcc-442cb63b0612",
       "name": "Send rejection note",
       "type": "n8n-nodes-base.slack",
       "typeVersion": 2.7,
       "position": [
-        3920,
-        -1520
+        4384,
+        1296
       ],
       "executeOnce": true,
-      "webhookId": "6438526d-ab05-4d72-ad4d-2d02b3aff70f",
+      "webhookId": "b8966010-fceb-4978-aeaa-28d8c79d83a3",
       "credentials": {
         "slackOAuth2Api": {
-          "id": "vz4wy58TLlPUA2aJ",
+          "id": "g6VQQ35RgmGHdNDr",
           "name": "Slack account"
         }
       }
@@ -1728,18 +1766,18 @@
           "includeLinkToWorkflow": false
         }
       },
-      "id": "8113aa8f-5aac-4f21-87e0-6b7458b9c98f",
+      "id": "6bd5df38-fd81-4072-ab52-d40a008f4f5f",
       "name": "Send no-change note",
       "type": "n8n-nodes-base.slack",
       "typeVersion": 2.7,
       "position": [
-        2800,
-        -1424
+        3264,
+        1392
       ],
-      "webhookId": "98ab668b-579e-4983-bc6f-440fb6e9ae9f",
+      "webhookId": "b3aa5b2c-3bcf-4b7e-9c12-deabd5739715",
       "credentials": {
         "slackOAuth2Api": {
-          "id": "vz4wy58TLlPUA2aJ",
+          "id": "g6VQQ35RgmGHdNDr",
           "name": "Slack account"
         }
       }
@@ -1759,18 +1797,18 @@
           "includeLinkToWorkflow": false
         }
       },
-      "id": "df741da7-08a7-406e-ad52-14e5c48315da",
+      "id": "279c5188-ac17-4dba-8fff-58d00d61e2f6",
       "name": "Send email triage note",
       "type": "n8n-nodes-base.slack",
       "typeVersion": 2.7,
       "position": [
-        2496,
-        -656
+        2480,
+        2160
       ],
-      "webhookId": "98e0477d-0d6a-41ee-b7a9-eb7423471c5e",
+      "webhookId": "1d12faf1-f079-42c7-a4cd-ac028fd123c6",
       "credentials": {
         "slackOAuth2Api": {
-          "id": "vz4wy58TLlPUA2aJ",
+          "id": "g6VQQ35RgmGHdNDr",
           "name": "Slack account"
         }
       }
@@ -1790,18 +1828,18 @@
           "includeLinkToWorkflow": false
         }
       },
-      "id": "6c8892db-d0fb-4ac7-a38c-7cdde4dbea75",
+      "id": "d78b4be8-646a-449d-9b6e-ad6b52a82099",
       "name": "Send unknown trigger note",
       "type": "n8n-nodes-base.slack",
       "typeVersion": 2.7,
       "position": [
-        2048,
-        -368
+        2032,
+        2448
       ],
-      "webhookId": "7f2ad4e5-408f-47c4-be3a-78d460a4e96d",
+      "webhookId": "e964eb38-312a-458a-9d0b-cca9c4df0c5b",
       "credentials": {
         "slackOAuth2Api": {
-          "id": "vz4wy58TLlPUA2aJ",
+          "id": "g6VQQ35RgmGHdNDr",
           "name": "Slack account"
         }
       }
@@ -1813,18 +1851,18 @@
         "authentication": "headerAuth",
         "options": {}
       },
-      "id": "f601fab4-4574-458d-914b-9af1f0014f93",
+      "id": "7142bc9b-f79b-4968-8b3d-8a998ace5b8b",
       "name": "Event webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.2,
       "position": [
         0,
-        -1952
+        512
       ],
       "webhookId": "36767dba-8015-4282-947c-0537489d9f6a",
       "credentials": {
         "httpHeaderAuth": {
-          "id": "WCiNlDDt7bfliXJG",
+          "id": "yaYASvDJBTmokVMH",
           "name": "Header Auth account"
         }
       }
@@ -1861,13 +1899,13 @@
         },
         "options": {}
       },
-      "id": "186c4afb-cc6d-4023-b873-74e2cb0e43f0",
+      "id": "f1bf4f5a-da8d-4f4d-ae80-9dd6d31ffd4e",
       "name": "Event input fields",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
         384,
-        -1952
+        512
       ]
     },
     {
@@ -1881,13 +1919,13 @@
           ]
         }
       },
-      "id": "6fa12c72-45f7-40b7-ad1b-a5ae291c7225",
+      "id": "35d19422-7728-4269-9b85-3be21fd24976",
       "name": "Morning brief (weekdays 7:30)",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.4,
       "position": [
         0,
-        -1760
+        704
       ]
     },
     {
@@ -1896,7 +1934,7 @@
         "dataTableId": {
           "__rl": true,
           "mode": "id",
-          "value": "WCuHtLBeLnFmdhTc",
+          "value": "lZ0uMKyNOfKbXG4B",
           "cachedResultName": "user_profiles"
         },
         "matchType": "allConditions",
@@ -1910,13 +1948,13 @@
         },
         "returnAll": true
       },
-      "id": "ef4dc738-a210-4309-ac33-18073d11ba76",
+      "id": "9b20f0c4-8bee-47d1-9958-a95ff31a8d97",
       "name": "Get active users",
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
         288,
-        -1424
+        1024
       ]
     },
     {
@@ -1945,13 +1983,13 @@
         },
         "options": {}
       },
-      "id": "5102991f-3785-46c2-8ffb-b9dca1ea33f0",
+      "id": "6731d83d-2dfa-4a69-883d-d7e6c764b673",
       "name": "Schedule input fields",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
         512,
-        -1424
+        1024
       ]
     },
     {
@@ -1965,13 +2003,13 @@
           ]
         }
       },
-      "id": "70f32e4d-fd24-4c94-b793-5575c1fdb4f0",
+      "id": "ad6ab02f-c1ac-48bb-a0b3-5b3410a93ec8",
       "name": "Evening sweep (weekdays 18:00)",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.4,
       "position": [
         0,
-        -1568
+        896
       ]
     },
     {
@@ -1985,14 +2023,58 @@
           ]
         }
       },
-      "id": "8a430b12-bc1d-4a18-b8b1-0f549537f64d",
+      "id": "8dff3a9e-75dd-497d-8def-ed8cf09acd6a",
       "name": "Weekly review (Friday 16:00)",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.4,
       "position": [
         0,
-        -1376
+        1088
       ]
+    },
+    {
+      "parameters": {},
+      "id": "682487a9-c089-425c-9e73-9eb648368933",
+      "name": "On workflow error",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        1312
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "user",
+        "user": {
+          "__rl": true,
+          "mode": "list",
+          "value": "U0CGDHCSD5F",
+          "cachedResultName": "prashanth babu (@aiagenticlearner)"
+        },
+        "text": "=:rotating_light: *Workflow failed:* {{ $json.workflow?.name || \"Unknown workflow\" }}\n*Failed node:* {{ $json.execution?.lastNodeExecuted || $json.trigger?.error?.node?.name || \"n/a\" }}\n*Error:* {{ $json.execution?.error?.message || $json.trigger?.error?.message || \"No message\" }}\n*Execution:* {{ $json.execution?.url || (\"Execution id \" + ($json.execution?.id || \"n/a\")) }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "df006543-4924-490b-9d25-88405efb4f96",
+      "name": "Alert owner on Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.7,
+      "position": [
+        224,
+        1312
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "webhookId": "bb0768d4-e9ba-455a-a740-163204201dc0",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "g6VQQ35RgmGHdNDr",
+          "name": "Slack account"
+        }
+      }
     },
     {
       "parameters": {
@@ -2000,22 +2082,22 @@
         "combineBy": "combineByPosition",
         "options": {}
       },
-      "id": "ec3df596-91c6-4125-9a77-26e8812eb7c7",
+      "id": "c9adb920-d873-483b-a965-a21af3c89b50",
       "name": "Combine brief inputs",
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        2272,
-        -1616
+        2256,
+        1200
       ]
     },
     {
       "parameters": {
         "workflowId": {
           "__rl": true,
+          "value": "iIGccD7qUu123cZq",
           "mode": "id",
-          "value": "cckenr2E9a3hKm0Y",
-          "cachedResultName": "Briefing agent (read-only)"
+          "cachedResultUrl": "/workflow/iIGccD7qUu123cZq"
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
@@ -2042,13 +2124,13 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "4a0b0bf4-0582-4461-a49f-275ea40fb663",
+      "id": "a196433c-8dc5-459d-a89f-2f230936c1ef",
       "name": "Brief: build briefing",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        2496,
-        -1616
+        2480,
+        1200
       ],
       "retryOnFail": true,
       "maxTries": 3,
@@ -2069,62 +2151,18 @@
           "includeLinkToWorkflow": false
         }
       },
-      "id": "c85349ac-c78a-4048-a209-e1494f253ed5",
+      "id": "291bc399-b782-4ec8-8569-25e64e53b461",
       "name": "Send morning brief",
       "type": "n8n-nodes-base.slack",
       "typeVersion": 2.7,
       "position": [
-        2720,
-        -1616
+        2704,
+        1200
       ],
-      "webhookId": "c71018ba-1f36-4ae2-9e15-3473f1519892",
+      "webhookId": "7df31249-6327-4b73-b022-f39139883cc5",
       "credentials": {
         "slackOAuth2Api": {
-          "id": "vz4wy58TLlPUA2aJ",
-          "name": "Slack account"
-        }
-      }
-    },
-    {
-      "parameters": {},
-      "id": "b70e7bfd-5825-4c96-b8d8-a03fbf038585",
-      "name": "On workflow error",
-      "type": "n8n-nodes-base.errorTrigger",
-      "typeVersion": 1,
-      "position": [
-        480,
-        -1264
-      ]
-    },
-    {
-      "parameters": {
-        "authentication": "oAuth2",
-        "select": "user",
-        "user": {
-          "__rl": true,
-          "mode": "list",
-          "value": "U0CGDHCSD5F",
-          "cachedResultName": "prashanth babu (@aiagenticlearner)"
-        },
-        "text": "=:rotating_light: *Workflow failed:* {{ $json.workflow?.name || \"Unknown workflow\" }}\n*Failed node:* {{ $json.execution?.lastNodeExecuted || $json.trigger?.error?.node?.name || \"n/a\" }}\n*Error:* {{ $json.execution?.error?.message || $json.trigger?.error?.message || \"No message\" }}\n*Execution:* {{ $json.execution?.url || (\"Execution id \" + ($json.execution?.id || \"n/a\")) }}",
-        "otherOptions": {
-          "includeLinkToWorkflow": false
-        }
-      },
-      "id": "9c96f32f-f122-4abe-8efc-b18e7c85a186",
-      "name": "Alert owner on Slack",
-      "type": "n8n-nodes-base.slack",
-      "typeVersion": 2.7,
-      "position": [
-        704,
-        -1264
-      ],
-      "retryOnFail": true,
-      "maxTries": 3,
-      "webhookId": "494ec17f-5f9d-4229-bc4e-7d6aaaeac1d7",
-      "credentials": {
-        "slackOAuth2Api": {
-          "id": "vz4wy58TLlPUA2aJ",
+          "id": "g6VQQ35RgmGHdNDr",
           "name": "Slack account"
         }
       }
@@ -2210,6 +2248,11 @@
         [
           {
             "node": "Reply in chat",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Langfuse trace",
             "type": "main",
             "index": 0
           }
@@ -2669,6 +2712,17 @@
         ]
       ]
     },
+    "On workflow error": {
+      "main": [
+        [
+          {
+            "node": "Alert owner on Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Combine brief inputs": {
       "main": [
         [
@@ -2690,114 +2744,103 @@
           }
         ]
       ]
-    },
-    "On workflow error": {
-      "main": [
-        [
-          {
-            "node": "Alert owner on Slack",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
     }
   },
   "active": true,
   "settings": {
     "executionOrder": "v1",
-    "binaryMode": "separate",
-    "timezone": "Asia/Kolkata",
-    "errorWorkflow": "mgTS3Y2KolpDdVX0"
+    "binaryMode": "separate"
   },
-  "versionId": "7ee7f4b7-33b3-4a4e-8ea1-154712da3b9e",
+  "versionId": "6d0ce080-f89d-405d-b91f-5ae4f67749ce",
   "meta": {
-    "instanceId": "ec4f3655d17daa19a5288cbca637de661f51f490a4e49ce8a984f9e8ea511425"
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4d273b0de4bdb097868042158b95ef96a446b62fd1b2b5d27959556392b21b82"
   },
   "nodeGroups": [
     {
-      "id": "e706a6c9-d573-49de-b1ff-f57522851906",
+      "id": "6dd0f711-07f2-490a-be63-bb7d75aa5dee",
       "name": "Collect active users",
       "nodeIds": [
-        "ef4dc738-a210-4309-ac33-18073d11ba76",
-        "5102991f-3785-46c2-8ffb-b9dca1ea33f0"
+        "9b20f0c4-8bee-47d1-9958-a95ff31a8d97",
+        "6731d83d-2dfa-4a69-883d-d7e6c764b673"
       ],
       "description": "On each schedule, lists every active profile so each user gets their own run"
     },
     {
-      "id": "de812643-0b95-4743-9fb3-1c485f15a720",
+      "id": "ef555f37-4de4-4f83-87cb-9de836df8117",
       "name": "Load user context",
       "nodeIds": [
-        "a839e894-9089-4524-b72d-38ca95afe437",
-        "25f17b59-7095-436d-88a9-b0ad9297c687",
-        "aafeb261-8b16-4058-aba7-4694d1424142",
-        "27bc29bc-66e6-4c0d-bd33-1dddd40d194a"
+        "d075a3fd-aaad-4c79-9528-2baa72367593",
+        "3cdeb6a3-2f20-4fbe-8f05-343234817134",
+        "d3b4d2b2-cbac-45ef-9722-185537e5d320",
+        "0a9905c0-e573-490f-a232-e20f48428fc1"
       ],
       "description": "Finds the profile, fills name, timezone, hours, preferences and current time, then splits chat from background runs"
     },
     {
-      "id": "6e8925ef-df11-41e4-8623-0dd3c7bf6281",
+      "id": "32570658-cfd1-4e13-9bec-ccd574ba81f8",
       "name": "Answer chat requests",
       "nodeIds": [
-        "f9afe488-1d06-40dc-8608-223d9e9660e7",
-        "de11b2f0-37a5-4cbf-abef-245aac1d393d",
-        "80aa9d34-658f-460b-b34b-48e3b011baf5",
-        "2907defe-3017-4bd9-901e-6a05304811a2",
-        "f71b6f16-2fa1-42e1-a862-3f1325165950",
-        "1e8fb344-dc83-4028-9e75-c83e914a6fe8",
-        "3a4ec22e-109e-4328-9e55-82a28951d30a",
-        "66bdaf2d-f1cb-460c-82bf-afbb32d10e7f",
-        "4b50e809-72cd-4001-b19a-d4073f20e070",
-        "8814dcf9-4329-4cc2-aa2c-929c5efbda23",
-        "be68b2e1-c77b-4c62-81cb-ad3c77f23a55",
-        "573e71ba-fed1-4b6f-918e-f601ff27d12a"
+        "6e99e9ff-d5eb-459e-8041-648fa4d49ee1",
+        "3efdca21-321b-4ad2-9233-404202e59781",
+        "d0c0e797-0b3f-403d-bef6-54a3ceefba31",
+        "8ab4c5eb-34d8-4dc0-ba8e-ae7416d64c6a",
+        "b2f2301f-53d9-41b3-be3a-9c48e4595d88",
+        "63ce7666-4f76-4110-9c9b-dccae1bef5f2",
+        "62c9b1c5-59cf-47ee-8fa0-c2273964dd04",
+        "74d57b76-40b4-4844-9c84-3102f5e5a10a",
+        "6b272261-1b7f-47ac-83a3-747d280b4282",
+        "37b6db6e-5d13-434f-a025-5edf24aef7d8",
+        "301148fe-09de-4361-912f-b19892426695",
+        "b19d4a94-2cb2-400a-96e1-48208978ac67",
+        "4dc0865c-23e7-4273-ae70-4a54ff970daa"
       ],
       "description": "Hands each chat message to the right specialist; acting needs listed proposal ids plus a chat approval"
     },
     {
-      "id": "bc7129f4-aeba-42d0-86e7-2967851495c6",
+      "id": "e8c17157-64ef-4cd9-9486-df5841974c8d",
       "name": "Handle background runs",
       "nodeIds": [
-        "5388d16d-8b70-4196-9ebd-5cd5993cf02d",
-        "087913aa-ce4f-432a-a014-d8fcd5a95714",
-        "898ebd8d-c7b1-405e-a2f0-42144454397e",
-        "ec3df596-91c6-4125-9a77-26e8812eb7c7",
-        "4a0b0bf4-0582-4461-a49f-275ea40fb663",
-        "c85349ac-c78a-4048-a209-e1494f253ed5",
-        "32249561-83b2-4a4f-b685-cd4e025fb314",
-        "1724c10f-ca6d-4b32-beea-40071016794f",
-        "afda7d7d-d295-48c0-94c8-b6296f22a196",
-        "7238e216-f7fa-4055-9708-4e0ac41a11ad",
-        "04ce3e5b-8f38-4754-9456-8613f54a25f0",
-        "15f5fb97-d6a0-4b7b-b755-a85d0139d134",
-        "6c8892db-d0fb-4ac7-a38c-7cdde4dbea75",
-        "33e8e594-3481-4d88-bfba-b2f8381628dd",
-        "de020cb5-9297-4e58-ae21-bf2f875dd756",
-        "f9d9f046-910f-43dd-a937-c43714eb0b72",
-        "df741da7-08a7-406e-ad52-14e5c48315da",
-        "be30d592-9a56-4813-8cc2-7ad07611c52b"
+        "4e3df7bd-050a-4dbc-aedb-fd972b8ce9f3",
+        "3262bb46-0eb9-4ea0-980c-1b131ad8b7aa",
+        "af0de0a7-513b-45b1-a026-3ced0268f851",
+        "c9adb920-d873-483b-a965-a21af3c89b50",
+        "a196433c-8dc5-459d-a89f-2f230936c1ef",
+        "291bc399-b782-4ec8-8569-25e64e53b461",
+        "eb3a9d6b-e8de-4e0e-b4a1-d609b95f3929",
+        "e3bc7d99-d5d0-4143-8a49-3dd4bfa04f83",
+        "bc381cf3-1985-4b6d-947a-fc475500eea4",
+        "3dbe13ee-d0f6-4224-80c7-6abfec3deb0a",
+        "e02fd8aa-cc5c-422d-abd6-79d20f809acd",
+        "2cc35aca-4c81-43f4-b5f7-3810e9ea56dc",
+        "d78b4be8-646a-449d-9b6e-ad6b52a82099",
+        "d363e319-2de9-411c-8118-381eb286505e",
+        "39a23642-dd28-4df9-a4b9-fc7f9d25c72e",
+        "8e62fc6a-3b4d-40eb-a006-f9afb7d13d9d",
+        "279c5188-ac17-4dba-8fff-58d00d61e2f6",
+        "0d845ce5-c3bb-4a95-a927-ac5b91f9516a"
       ],
       "description": "Briefs, sweeps, reviews, meeting recaps and new-mail triage go to Slack; meeting requests and conflicts go on to scheduling"
     },
     {
-      "id": "2eeffe5d-d266-481a-b77a-4655c325325c",
+      "id": "407ce0f3-5c6f-417f-92d5-77f41c430b7e",
       "name": "Approve schedule changes",
       "nodeIds": [
-        "532dd7a2-d7e4-44f9-9505-34ef5a1b9f6f",
-        "c0816d83-3ca4-4d2f-8341-1904dffc672b",
-        "ba4d4da9-810e-4b56-b4f2-90009ce8411c",
-        "81b393f4-9da9-4141-99c8-ac7d3637e46b",
-        "fbbe4994-a3ef-4297-bd6a-24b749863291",
-        "7bd53dbf-8b34-460d-b1f1-3107e21a2ece",
-        "201cea68-a9df-41ad-8077-a23c765c069f",
-        "38eb72b8-85df-407f-b750-f7b10f89477f",
-        "8df838cd-3dd3-4559-bd18-006174f353dc",
-        "6a0d8d60-51d0-4fab-bf33-dc80f28ec363",
-        "8113aa8f-5aac-4f21-87e0-6b7458b9c98f"
+        "094b7808-b73d-4060-ac0a-7497165a255a",
+        "61536b82-606f-464e-8444-c30612dbe57d",
+        "b7b90195-b832-403a-9ec8-77f8e70f44ed",
+        "e5c57830-a75a-4324-8c94-cb1852ef994d",
+        "dbd1f544-ea94-41f6-97f9-f69453d4c8ec",
+        "023a398c-659f-4bd8-84cc-9f81c99e78e1",
+        "5266449a-8d4b-43f2-aff2-941e215782ab",
+        "a8d04497-fe98-4df1-81c1-fcccf76b2ea2",
+        "a62ef04d-c583-4971-b1e8-300a822cb629",
+        "a5d0ad2b-43d2-408f-9dcc-442cb63b0612",
+        "6bd5df38-fd81-4072-ab52-d40a008f4f5f"
       ],
       "description": "Proposes calendar fixes, asks for a Slack approval, then applies them or marks them rejected"
     }
   ],
-  "id": "b8NJ1sEhCypoAwEm",
+  "id": "QzvsbNQ063Ogo8TE",
   "tags": []
 }

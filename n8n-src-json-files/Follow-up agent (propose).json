@@ -12,26 +12,62 @@
           ]
         }
       },
-      "id": "859c7aca-8cbb-4520-b675-615a7e51d0d7",
+      "id": "3b8a6706-f372-456a-a869-d3cf816d099b",
       "name": "When called by router",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
       "position": [
         0,
-        192
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "t1",
+              "name": "trace_id",
+              "type": "string",
+              "value": "={{ (\"follow-up-\" + $workflow.id + \"-\" + $execution.id).hash(\"md5\") }}"
+            },
+            {
+              "id": "t3",
+              "name": "span_id",
+              "type": "string",
+              "value": "={{ (\"follow-up-\" + $workflow.id + \"-\" + $execution.id + \"-root\").hash(\"sha256\").slice(0, 16) }}"
+            },
+            {
+              "id": "t2",
+              "name": "trace_start",
+              "type": "string",
+              "value": "={{ $now.toISO() }}"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "e12e5e40-cf47-4fa9-b569-640b22a061ce",
+      "name": "Start trace",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        288,
+        288
       ]
     },
     {
       "parameters": {
         "jsCode": "const raw = $input.first().json;\nlet task;\ntry { task = typeof raw.task === 'string' ? JSON.parse(raw.task) : raw.task; }\ncatch (e) { throw new Error('task is not valid JSON'); }\nif (!task || typeof task !== 'object') throw new Error('task is missing');\nfor (const k of ['task_id', 'user_id', 'goal']) {\n  if (!task[k]) throw new Error('task missing ' + k);\n}\ntask.agent = 'follow_up';\ntask.mode = 'propose';          // this workflow can never run in another mode\ntask.inputs = task.inputs || {};\nreturn [{ json: { user_id: String(task.user_id), task } }];"
       },
-      "id": "8c52c8fa-1348-4340-ba08-c8962c8359ed",
+      "id": "efa61c4b-48b2-4c52-a483-227e53f77165",
       "name": "Parse task",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        288,
-        320
+        512,
+        288
       ]
     },
     {
@@ -39,9 +75,10 @@
         "operation": "get",
         "dataTableId": {
           "__rl": true,
-          "mode": "id",
-          "value": "WCuHtLBeLnFmdhTc",
-          "cachedResultName": "user_profiles"
+          "value": "lZ0uMKyNOfKbXG4B",
+          "mode": "list",
+          "cachedResultName": "user_profiles",
+          "cachedResultUrl": "/projects/duFL6azEOnaiy6gS/datatables/lZ0uMKyNOfKbXG4B"
         },
         "matchType": "allConditions",
         "filters": {
@@ -58,13 +95,13 @@
         },
         "limit": 1
       },
-      "id": "cc580240-e54a-430d-92f0-443a41dc8b77",
+      "id": "dca63315-3b8e-4be1-b885-c5aca642da41",
       "name": "Load profile",
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        512,
-        320
+        736,
+        288
       ],
       "alwaysOutputData": true
     },
@@ -93,26 +130,26 @@
         "looseTypeValidation": true,
         "options": {}
       },
-      "id": "b930acd2-12c0-4b26-aeae-c0fcf4b123d7",
+      "id": "76322c38-23fb-46c1-ae49-a0217641fce7",
       "name": "Profile found?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        736,
-        320
+        960,
+        288
       ]
     },
     {
       "parameters": {
         "jsCode": "const profile = $('Load profile').first().json;\nconst { task } = $('Parse task').first().json;\nconst j = (v, fallback) => {\n  try { return typeof v === 'string' ? JSON.parse(v) : (v ?? fallback); } catch (e) { return fallback; }\n};\nconst tz = profile.tz || 'Asia/Kolkata';\nconst prefs = j(profile.preferences, {});\nconst lookback = Number(task.inputs.lookback_days || prefs.follow_up_lookback_days || 3);\nreturn [{ json: {\n  task,\n  ctx: {\n    user_id: profile.user_id, user_name: profile.name, user_email: profile.email,\n    tz, now: DateTime.now().setZone(tz).toISO(),\n    lookback_days: lookback,\n    window_start: DateTime.now().setZone(tz).minus({ days: lookback }).toISO(),\n    working_hours: j(profile.working_hours, { start: '09:30', end: '18:30' }),\n    calendars: j(profile.calendars, []), preferences: prefs,\n    default_duration: prefs.default_duration || 30,\n    company_domains: prefs.company_domains || [],\n    vip: prefs.vip || []\n  }\n} }];"
       },
-      "id": "b64e3c2b-b55b-40c8-a2f1-ece37bf8d261",
+      "id": "59f9be80-43c8-4b97-a4ce-1f805f8dba0e",
       "name": "Build context",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        816,
-        -96
+        1296,
+        0
       ]
     },
     {
@@ -127,13 +164,13 @@
           "enableStreaming": false
         }
       },
-      "id": "9bf836eb-b735-4713-a0be-85e054ad2607",
+      "id": "5f64888d-b0df-4659-8e90-64c3d7b06688",
       "name": "Follow-up agent",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
       "position": [
-        1280,
-        -96
+        1760,
+        0
       ],
       "onError": "continueErrorOutput"
     },
@@ -148,17 +185,17 @@
         "builtInTools": {},
         "options": {}
       },
-      "id": "63fef265-f70a-4d6c-be48-46ea4e58309e",
+      "id": "57416c4d-87ab-4970-aea5-7e2fb19df6bc",
       "name": "OpenAI Chat Model",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.3,
       "position": [
-        1040,
-        368
+        1512,
+        232
       ],
       "credentials": {
         "openAiApi": {
-          "id": "LnvCgMxtM2ub3aHz",
+          "id": "alSOt4AV5ZiXdpcu",
           "name": "OpenAI account"
         }
       }
@@ -182,18 +219,18 @@
           "recurringEventHandling": "expand"
         }
       },
-      "id": "63c4dbf3-8c19-4ad8-9ae6-99188035de55",
+      "id": "61c2d735-16be-4ff6-9e42-34b0523039e6",
       "name": "calendar_events",
       "type": "n8n-nodes-base.googleCalendarTool",
       "typeVersion": 1.3,
       "position": [
-        1168,
-        144
+        1640,
+        232
       ],
       "credentials": {
         "googleCalendarOAuth2Api": {
-          "id": "FGqp1UtTPeBwJuII",
-          "name": "Google Calendar account"
+          "id": "f9ekqdeAlalROn06",
+          "name": "aiagenticlearner@gmail.com Calendar"
         }
       }
     },
@@ -208,19 +245,19 @@
           "readStatus": "both"
         }
       },
-      "id": "ed1b9bd2-6cfd-4087-811d-536e49c7f8da",
+      "id": "e791e448-574d-4439-bda7-449a0ebb76dc",
       "name": "search_mail",
       "type": "n8n-nodes-base.gmailTool",
       "typeVersion": 2.2,
       "position": [
-        1296,
-        144
+        1768,
+        232
       ],
-      "webhookId": "67ae2574-3f05-40e5-8229-001a87fd87d4",
+      "webhookId": "a76cf3ea-15da-4ba3-a579-2875b46c95f1",
       "credentials": {
         "gmailOAuth2": {
-          "id": "2lEeYirZIRz3xJJ9",
-          "name": "Gmail account"
+          "id": "BXPis0WdaDF0urub",
+          "name": "aiagenticlearner@gmail.com"
         }
       }
     },
@@ -234,18 +271,18 @@
         "limit": 20,
         "options": {}
       },
-      "id": "f4d8521d-15c1-42cb-a5cd-225dbb0ebde8",
+      "id": "f602e110-76a6-4924-aed2-687442044c7d",
       "name": "search_chat",
       "type": "n8n-nodes-base.slackTool",
       "typeVersion": 2.7,
       "position": [
-        1424,
-        144
+        1896,
+        232
       ],
-      "webhookId": "b4f681a4-d38c-452a-bd28-f7a439a39093",
+      "webhookId": "e4765090-35b1-4c54-b180-5bbc2a3e3503",
       "credentials": {
         "slackOAuth2Api": {
-          "id": "vz4wy58TLlPUA2aJ",
+          "id": "g6VQQ35RgmGHdNDr",
           "name": "Slack account"
         }
       }
@@ -269,18 +306,18 @@
           ]
         }
       },
-      "id": "8f7e4603-afe5-4c82-b3a6-967880ddf4a1",
+      "id": "0f9c6c19-3194-4189-82c1-4f9a8fdcfdd3",
       "name": "search_docs",
       "type": "n8n-nodes-base.googleDriveTool",
       "typeVersion": 3,
       "position": [
-        1552,
-        144
+        2024,
+        232
       ],
       "credentials": {
         "googleDriveOAuth2Api": {
-          "id": "Nd4610IuTEQTxvTA",
-          "name": "Google Drive account"
+          "id": "9lecX4PdQz8vAshj",
+          "name": "aiagenticlearner@gmail.com drive"
         }
       }
     },
@@ -289,13 +326,13 @@
         "schemaType": "manual",
         "inputSchema": "{\n  \"type\": \"object\",\n  \"required\": [\n    \"status\",\n    \"results\",\n    \"proposals\",\n    \"notes\"\n  ],\n  \"properties\": {\n    \"status\": {\n      \"type\": \"string\",\n      \"enum\": [\n        \"ok\",\n        \"needs_input\",\n        \"no_action\"\n      ]\n    },\n    \"results\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"summary\": {\n          \"type\": \"string\"\n        },\n        \"open_loops\": {\n          \"type\": \"array\",\n          \"items\": {\n            \"type\": \"object\",\n            \"properties\": {\n              \"source\": {\n                \"type\": [\n                  \"string\",\n                  \"null\"\n                ]\n              },\n              \"reference\": {\n                \"type\": [\n                  \"string\",\n                  \"null\"\n                ]\n              },\n              \"who\": {\n                \"type\": [\n                  \"string\",\n                  \"null\"\n                ]\n              },\n              \"description\": {\n                \"type\": [\n                  \"string\",\n                  \"null\"\n                ]\n              },\n              \"owner\": {\n                \"type\": [\n                  \"string\",\n                  \"null\"\n                ]\n              }\n            }\n          }\n        }\n      }\n    },\n    \"proposals\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"required\": [\n          \"type\",\n          \"summary\"\n        ],\n        \"properties\": {\n          \"type\": {\n            \"type\": \"string\",\n            \"enum\": [\n              \"send_email\",\n              \"create_task\",\n              \"create_event\",\n              \"update_event\"\n            ]\n          },\n          \"summary\": {\n            \"type\": \"string\"\n          },\n          \"to\": {\n            \"type\": [\n              \"array\",\n              \"null\"\n            ],\n            \"items\": {\n              \"type\": \"string\"\n            }\n          },\n          \"cc\": {\n            \"type\": [\n              \"array\",\n              \"null\"\n            ],\n            \"items\": {\n              \"type\": \"string\"\n            }\n          },\n          \"subject\": {\n            \"type\": [\n              \"string\",\n              \"null\"\n            ]\n          },\n          \"body\": {\n            \"type\": [\n              \"string\",\n              \"null\"\n            ]\n          },\n          \"thread_id\": {\n            \"type\": [\n              \"string\",\n              \"null\"\n            ]\n          },\n          \"title\": {\n            \"type\": [\n              \"string\",\n              \"null\"\n            ]\n          },\n          \"notes\": {\n            \"type\": [\n              \"string\",\n              \"null\"\n            ]\n          },\n          \"due\": {\n            \"type\": [\n              \"string\",\n              \"null\"\n            ]\n          },\n          \"calendar_id\": {\n            \"type\": [\n              \"string\",\n              \"null\"\n            ]\n          },\n          \"event_id\": {\n            \"type\": [\n              \"string\",\n              \"null\"\n            ]\n          },\n          \"start\": {\n            \"type\": [\n              \"string\",\n              \"null\"\n            ]\n          },\n          \"end\": {\n            \"type\": [\n              \"string\",\n              \"null\"\n            ]\n          },\n          \"attendees\": {\n            \"type\": [\n              \"array\",\n              \"null\"\n            ],\n            \"items\": {\n              \"type\": \"string\"\n            }\n          },\n          \"affects\": {\n            \"type\": [\n              \"array\",\n              \"null\"\n            ],\n            \"items\": {\n              \"type\": \"string\"\n            }\n          },\n          \"external\": {\n            \"type\": [\n              \"boolean\",\n              \"null\"\n            ]\n          },\n          \"reason\": {\n            \"type\": [\n              \"string\",\n              \"null\"\n            ]\n          }\n        }\n      }\n    },\n    \"notes\": {\n      \"type\": \"string\"\n    }\n  }\n}"
       },
-      "id": "a884a4dd-c8ce-4b0c-987c-0b8384c4e6a7",
+      "id": "1918b6f8-a84e-4ceb-b073-99bb26d2e1aa",
       "name": "Structured Output Parser",
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        1680,
-        144
+        2152,
+        232
       ]
     },
     {
@@ -330,26 +367,26 @@
         },
         "options": {}
       },
-      "id": "136315d7-cc74-4644-a775-4073a4e616eb",
+      "id": "fa080f05-4668-4ddd-8d48-f7dcd3514851",
       "name": "Agent output",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        2000,
-        176
+        2480,
+        96
       ]
     },
     {
       "parameters": {
         "jsCode": "// Structural check. Drops malformed proposals and recomputes \"external\" from addresses.\nconst ctx = $('Build context').first().json.ctx;\nconst out = $input.first().json;\nconst ALLOWED = ['send_email', 'create_task', 'create_event', 'update_event'];\nconst domains = (ctx.company_domains || []).map(d => String(d).toLowerCase());\nconst isInternal = (e) => domains.includes((String(e || '').toLowerCase().split('@')[1]) || '');\nconst asList = (v) => Array.isArray(v) ? v.map(String).filter(Boolean) : (v ? String(v).split(',').map(s => s.trim()).filter(Boolean) : []);\nconst notes = [];\nconst valid = [];\n(out.proposals || []).forEach((p, i) => {\n  const label = 'proposal ' + (i + 1);\n  if (!p || !ALLOWED.includes(p.type)) { notes.push(label + ' dropped: unknown type'); return; }\n  if (!p.summary) { notes.push(label + ' dropped: missing summary'); return; }\n  const to = asList(p.to), cc = asList(p.cc), attendees = asList(p.attendees);\n  if (p.type === 'send_email' && (!to.length || !p.subject || !p.body)) { notes.push(label + ' dropped: email needs to, subject and body'); return; }\n  if (p.type === 'create_task' && !p.title) { notes.push(label + ' dropped: task needs a title'); return; }\n  if (p.type === 'update_event' && !p.event_id) { notes.push(label + ' dropped: missing event_id'); return; }\n  if (p.type === 'create_event' || p.type === 'update_event') {\n    const s = DateTime.fromISO(String(p.start || '')), e = DateTime.fromISO(String(p.end || ''));\n    if (!s.isValid || !e.isValid || e <= s) { notes.push(label + ' dropped: invalid start/end'); return; }\n    if (s < DateTime.now()) { notes.push(label + ' dropped: starts in the past'); return; }\n  }\n  const people = p.type === 'send_email' ? to.concat(cc) : attendees;\n  valid.push(Object.assign({}, p, { to, cc, attendees,\n    calendar_id: p.calendar_id || 'primary',\n    affects: people.length ? people : asList(p.affects),\n    external: people.some(a => !isInternal(a)) }));\n});\nconst proposals = valid.slice(0, 8);\nlet status = ['ok', 'needs_input', 'no_action'].includes(out.status) ? out.status : 'ok';\nif (status === 'ok' && proposals.length === 0) status = 'no_action';\nreturn [{ json: { status, results: out.results || {}, proposals, notes: [out.notes].concat(notes).filter(Boolean).join(' | ') } }];"
       },
-      "id": "9e397bb6-393e-4d99-b0cc-39e2debda741",
+      "id": "da938639-87e0-4b46-a1e8-2fd4154a55c1",
       "name": "Validate output",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2224,
-        176
+        2704,
+        96
       ]
     },
     {
@@ -375,35 +412,36 @@
         },
         "options": {}
       },
-      "id": "669de3c7-2296-4401-b056-2b91a381d1f7",
+      "id": "0dcaff99-3cb3-458d-9cb9-67228ec9decc",
       "name": "Has proposals?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        2448,
-        176
+        2928,
+        96
       ]
     },
     {
       "parameters": {
         "jsCode": "const meta = $input.first().json;\nconst user_id = $('Parse task').first().json.user_id;\nconst agent = 'follow_up';                        // hard-coded per workflow\nconst pid = (i) => 'fu-' + String($execution.id) + '-' + (i + 1);   // Build response uses the same rule\nreturn meta.proposals.map((p, i) => ({ json: {\n  proposal_id: pid(i), user_id, agent,\n  action: JSON.stringify(p), summary: p.summary, external: !!p.external, status: 'pending'\n} }));"
       },
-      "id": "d196e5c1-d2dc-41d5-a7c8-5ae1a5a47636",
+      "id": "925ce2b5-beb6-4fe2-80ed-dea09c39ba45",
       "name": "Split proposals",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2672,
-        96
+        3152,
+        16
       ]
     },
     {
       "parameters": {
         "dataTableId": {
           "__rl": true,
-          "mode": "id",
-          "value": "5NcIttwxWCVGLBLB",
-          "cachedResultName": "pending_proposals"
+          "value": "VQu5LL2NuzSKHghG",
+          "mode": "list",
+          "cachedResultName": "pending_proposals",
+          "cachedResultUrl": "/projects/duFL6azEOnaiy6gS/datatables/VQu5LL2NuzSKHghG"
         },
         "columns": {
           "mappingMode": "defineBelow",
@@ -494,26 +532,79 @@
         },
         "options": {}
       },
-      "id": "4723f972-cbd2-42f0-88c0-7bf8bd25f98e",
+      "id": "e9eda2b2-9c62-476e-853f-64ac2f7f126a",
       "name": "Save proposals",
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        2896,
-        96
+        3376,
+        16
       ]
     },
     {
       "parameters": {
         "jsCode": "const meta = $('Validate output').first().json;\nconst pid = (i) => 'fu-' + String($execution.id) + '-' + (i + 1);   // same rule as Split proposals\nreturn [{ json: {\n  status: meta.status,\n  results: meta.results,\n  proposed_actions: meta.proposals.map((p, i) => ({\n    proposal_id: pid(i), summary: p.summary, affects: p.affects || [], external: !!p.external\n  })),\n  notes: meta.notes || ''\n} }];"
       },
-      "id": "6cea197a-2ecf-4d63-a6cc-d90fbce80287",
+      "id": "39047132-4e74-41f5-80e1-a679e6fe747e",
       "name": "Build response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3120,
-        176
+        3600,
+        96
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://cloud.langfuse.com/api/public/otel/v1/traces",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "langfuseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-langfuse-ingestion-version",
+              "value": "4"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify((() => {\n  const s = $('Start trace').first().json;\n  const task = s.task;\n  const userId = s.user_id || ((task && typeof task === 'object') ? task.user_id : null) || null;\n  const out = $json;\n  const ok = out.status === 'ok' || out.status === 'no_action';\n  const startNs = String(DateTime.fromISO(s.trace_start).toMillis()) + '000000';\n  const endNs = String($now.toMillis()) + '000000';\n  const str = (k, v) => ({ key: k, value: { stringValue: String(v == null ? '' : v) } });\n  const attrs = [\n    str('langfuse.trace.name', 'follow-up-agent'),\n    str('langfuse.observation.type', 'agent'),\n    str('langfuse.observation.input', typeof task === 'string' ? task : JSON.stringify(task)),\n    str('langfuse.observation.output', JSON.stringify(out)),\n    str('langfuse.observation.level', out.status === 'failed' ? 'ERROR' : (ok ? 'DEFAULT' : 'WARNING')),\n    str('langfuse.observation.status_message', out.notes || ''),\n    { key: 'langfuse.trace.tags', value: { arrayValue: { values: [{ stringValue: 'n8n' }, { stringValue: 'follow-up-agent' }] } } },\n    str('langfuse.trace.metadata.workflow_id', $workflow.id),\n    str('langfuse.trace.metadata.workflow_name', $workflow.name),\n    str('langfuse.trace.metadata.execution_id', $execution.id),\n    str('langfuse.trace.metadata.mode', $execution.mode),\n    str('langfuse.trace.metadata.status', out.status),\n    str('langfuse.trace.metadata.proposal_count', (out.proposed_actions || []).length)\n  ];\n  if (userId) attrs.push(str('langfuse.user.id', userId));\n  return { resourceSpans: [{\n    resource: { attributes: [str('service.name', 'n8n')] },\n    scopeSpans: [{ scope: { name: 'n8n-follow-up-agent' }, spans: [{\n      traceId: s.trace_id, spanId: s.span_id, name: 'Follow-up agent', kind: 1,\n      startTimeUnixNano: startNs, endTimeUnixNano: endNs,\n      attributes: attrs,\n      status: { code: out.status === 'failed' ? 2 : 1 }\n    }] }]\n  }] };\n})()) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "52b8cc0a-bfb4-4d92-a2df-dd8794e680cb",
+      "name": "Send trace to Langfuse",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        3936,
+        288
+      ],
+      "executeOnce": true,
+      "credentials": {
+        "langfuseApi": {
+          "id": "NScmg3aAxJmZOabD",
+          "name": "Langfuse account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Return the agent response (not the Langfuse API reply) to the router.\nconst src = $('Build response').isExecuted ? $('Build response') : $('Failure response');\nreturn [{ json: src.first().json }];"
+      },
+      "id": "16dd3436-4261-4736-8b3c-41051a58c3bf",
+      "name": "Return response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4160,
+        288
       ],
       "executeOnce": true
     },
@@ -549,19 +640,30 @@
         },
         "options": {}
       },
-      "id": "afae0b09-ff2d-40d4-af40-dc8bedfba68b",
+      "id": "e20a22c4-b9be-43ee-8298-763a5f0b9702",
       "name": "Failure response",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        2096,
-        320
+        3040,
+        448
       ]
     }
   ],
   "pinData": {},
   "connections": {
     "When called by router": {
+      "main": [
+        [
+          {
+            "node": "Start trace",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start trace": {
       "main": [
         [
           {
@@ -768,58 +870,101 @@
           }
         ]
       ]
+    },
+    "Build response": {
+      "main": [
+        [
+          {
+            "node": "Send trace to Langfuse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send trace to Langfuse": {
+      "main": [
+        [
+          {
+            "node": "Return response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Failure response": {
+      "main": [
+        [
+          {
+            "node": "Send trace to Langfuse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
   "settings": {
     "executionOrder": "v1",
-    "binaryMode": "separate",
-    "errorWorkflow": "mgTS3Y2KolpDdVX0"
+    "binaryMode": "separate"
   },
-  "versionId": "b8d18b8c-7b35-49b3-899a-ea19873ee148",
+  "versionId": "e1d00c37-58af-4c5e-95c5-e592456bfde3",
   "meta": {
-    "instanceId": "ec4f3655d17daa19a5288cbca637de661f51f490a4e49ce8a984f9e8ea511425"
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4d273b0de4bdb097868042158b95ef96a446b62fd1b2b5d27959556392b21b82"
   },
   "nodeGroups": [
     {
-      "id": "24e960c2-607e-4c76-aa88-3eeb42666aa7",
+      "id": "d1557949-a642-4a81-9a41-1db813c8e49d",
       "name": "Identify the user",
       "nodeIds": [
-        "8c52c8fa-1348-4340-ba08-c8962c8359ed",
-        "cc580240-e54a-430d-92f0-443a41dc8b77",
-        "b930acd2-12c0-4b26-aeae-c0fcf4b123d7"
+        "e12e5e40-cf47-4fa9-b569-640b22a061ce",
+        "efa61c4b-48b2-4c52-a483-227e53f77165",
+        "dca63315-3b8e-4be1-b885-c5aca642da41",
+        "76322c38-23fb-46c1-ae49-a0217641fce7"
       ],
       "description": "Reads the incoming task and loads the matching active profile; unknown users get a failed reply"
     },
     {
-      "id": "f9837cfa-b6f1-40d0-a4a5-5d5e3aa08388",
+      "id": "2452d917-96eb-44d2-9335-48a86fdc1660",
       "name": "Find open loops",
       "nodeIds": [
-        "b64e3c2b-b55b-40c8-a2f1-ece37bf8d261",
-        "9bf836eb-b735-4713-a0be-85e054ad2607",
-        "63fef265-f70a-4d6c-be48-46ea4e58309e",
-        "63c4dbf3-8c19-4ad8-9ae6-99188035de55",
-        "ed1b9bd2-6cfd-4087-811d-536e49c7f8da",
-        "f4d8521d-15c1-42cb-a5cd-225dbb0ebde8",
-        "8f7e4603-afe5-4c82-b3a6-967880ddf4a1",
-        "a884a4dd-c8ce-4b0c-987c-0b8384c4e6a7"
+        "59f9be80-43c8-4b97-a4ce-1f805f8dba0e",
+        "5f64888d-b0df-4659-8e90-64c3d7b06688",
+        "57416c4d-87ab-4970-aea5-7e2fb19df6bc",
+        "61c2d735-16be-4ff6-9e42-34b0523039e6",
+        "e791e448-574d-4439-bda7-449a0ebb76dc",
+        "f602e110-76a6-4924-aed2-687442044c7d",
+        "0f9c6c19-3194-4189-82c1-4f9a8fdcfdd3",
+        "1918b6f8-a84e-4ceb-b073-99bb26d2e1aa"
       ],
       "description": "Searches recent calendar, mail, chat and docs for unanswered threads and promises, then drafts next steps"
     },
     {
-      "id": "4f4bd7ac-e2f9-4c64-b352-aab753775e7c",
+      "id": "c9ee757a-f47d-4139-b4b8-5aaf9e6765f9",
       "name": "Queue for approval",
       "nodeIds": [
-        "136315d7-cc74-4644-a775-4073a4e616eb",
-        "9e397bb6-393e-4d99-b0cc-39e2debda741",
-        "669de3c7-2296-4401-b056-2b91a381d1f7",
-        "d196e5c1-d2dc-41d5-a7c8-5ae1a5a47636",
-        "4723f972-cbd2-42f0-88c0-7bf8bd25f98e",
-        "6cea197a-2ecf-4d63-a6cc-d90fbce80287"
+        "fa080f05-4668-4ddd-8d48-f7dcd3514851",
+        "da938639-87e0-4b46-a1e8-2fd4154a55c1",
+        "0dcaff99-3cb3-458d-9cb9-67228ec9decc",
+        "925ce2b5-beb6-4fe2-80ed-dea09c39ba45",
+        "e9eda2b2-9c62-476e-853f-64ac2f7f126a",
+        "39047132-4e74-41f5-80e1-a679e6fe747e"
       ],
       "description": "Drops malformed proposals, stores the rest as pending, and replies with proposal ids and one-line summaries"
+    },
+    {
+      "id": "23256e79-27cf-4062-b430-685c2ddf36ea",
+      "name": "Trace and reply",
+      "nodeIds": [
+        "52b8cc0a-bfb4-4d92-a2df-dd8794e680cb",
+        "16dd3436-4261-4736-8b3c-41051a58c3bf"
+      ],
+      "description": "Logs the run, input, outcome and timing to Langfuse, then hands the response back to the router"
     }
   ],
-  "id": "UICqKzr9q4PJ2bDn",
+  "id": "2cYTXjDIP5Ox4ood",
   "tags": []
 }

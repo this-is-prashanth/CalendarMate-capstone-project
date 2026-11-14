@@ -15,13 +15,13 @@
           ]
         }
       },
-      "id": "f1ade3c8-84ed-4e0a-873a-d0aef01daf37",
+      "id": "d12478dd-b16b-4757-9784-f4d0c20f5edd",
       "name": "When approved",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
       "position": [
         0,
-        384
+        1104
       ]
     },
     {
@@ -29,9 +29,10 @@
         "operation": "get",
         "dataTableId": {
           "__rl": true,
-          "mode": "id",
-          "value": "5NcIttwxWCVGLBLB",
-          "cachedResultName": "pending_proposals"
+          "value": "VQu5LL2NuzSKHghG",
+          "mode": "list",
+          "cachedResultName": "pending_proposals",
+          "cachedResultUrl": "/projects/duFL6azEOnaiy6gS/datatables/VQu5LL2NuzSKHghG"
         },
         "matchType": "allConditions",
         "filters": {
@@ -52,13 +53,13 @@
         },
         "returnAll": true
       },
-      "id": "db7f64ab-58d1-4a8e-a3dc-87577614facb",
+      "id": "50454256-cc6a-4d3e-9009-493bb7d8433e",
       "name": "Get pending proposals",
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
         288,
-        560
+        1136
       ],
       "alwaysOutputData": true
     },
@@ -66,14 +67,51 @@
       "parameters": {
         "jsCode": "// Keep only rows that are pending, belong to this user, and were approved by id.\n// The stored action is used as-is; nothing here re-writes it.\nconst input = $('When approved').first().json;\nconst user_id = String(input.user_id || '');\nlet ids = input.proposal_ids;\nif (typeof ids === 'string') { try { ids = JSON.parse(ids); } catch (e) { ids = ids.split(','); } }\nids = (Array.isArray(ids) ? ids : []).map(s => String(s).trim()).filter(Boolean);\nconst rows = $input.all().map(i => i.json)\n  .filter(r => r.proposal_id && String(r.user_id) === user_id && r.status === 'pending' && ids.includes(r.proposal_id));\nconst out = [];\nconst bad = [];\nfor (const r of rows) {\n  let act;\n  try { act = JSON.parse(r.action); } catch (e) { bad.push(r.proposal_id); continue; }\n  out.push({ json: { proposal_id: r.proposal_id, user_id: r.user_id, type: act.type, summary: r.summary, act } });\n}\nif (!out.length) {\n  return [{ json: { type: 'none', proposal_ids: ids,\n    reason: bad.length ? 'Stored actions could not be read: ' + bad.join(', ') : 'No pending proposals match these ids for this user' } }];\n}\nreturn out;"
       },
-      "id": "5868a916-3655-4fd9-aff1-f190de0ab220",
+      "id": "6c972412-f737-4623-8305-7fc4752d9180",
       "name": "Pick approved",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
         512,
-        560
+        1136
       ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://cloud.langfuse.com/api/public/otel/v1/traces",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "langfuseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-langfuse-ingestion-version",
+              "value": "4"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ (() => { const hex = (n) => Array.from({ length: n }, () => Math.floor(Math.random() * 16).toString(16)).join(\"\"); const items = $input.all().map(i => i.json); const input = $('When approved').first().json; const nowMs = Date.now(); const start = String(nowMs) + \"000000\"; const end = String(nowMs + 1) + \"000000\"; const str = (k, v) => ({ key: k, value: { stringValue: String(v) } }); const traceId = hex(32); const rootId = hex(16); const attrs = [str(\"langfuse.trace.name\", $workflow.name), str(\"langfuse.user.id\", input.user_id || \"\"), str(\"langfuse.trace.input\", JSON.stringify({ proposal_ids: input.proposal_ids })), str(\"langfuse.trace.output\", JSON.stringify(items.map(r => ({ proposal_id: r.proposal_id, type: r.type, summary: r.summary })))), { key: \"langfuse.trace.tags\", value: { arrayValue: { values: [{ stringValue: \"n8n\" }, { stringValue: \"follow-up-agent\" }] } } }, str(\"n8n.execution.id\", $execution.id), str(\"n8n.workflow.id\", $workflow.id), str(\"n8n.execution.mode\", $execution.mode)]; const spans = [{ traceId, spanId: rootId, name: $workflow.name, kind: 1, startTimeUnixNano: start, endTimeUnixNano: end, attributes: attrs, status: { code: 1 } }]; items.forEach(r => spans.push({ traceId, spanId: hex(16), parentSpanId: rootId, name: String(r.type || \"none\"), kind: 1, startTimeUnixNano: start, endTimeUnixNano: end, attributes: [str(\"langfuse.observation.type\", \"span\"), str(\"langfuse.observation.input\", JSON.stringify({ proposal_id: r.proposal_id, summary: r.summary })), str(\"langfuse.observation.metadata.reason\", r.reason || \"\")], status: { code: 1 } })); return JSON.stringify({ resourceSpans: [{ resource: { attributes: [str(\"service.name\", \"n8n-follow-up-agent\")] }, scopeSpans: [{ scope: { name: \"n8n\" }, spans }] }] }); })() }}",
+        "options": {}
+      },
+      "id": "41b3c9ca-bf38-4bda-b544-f858df5b05ff",
+      "name": "Langfuse trace",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        736,
+        1248
+      ],
+      "executeOnce": true,
+      "credentials": {
+        "langfuseApi": {
+          "id": "NScmg3aAxJmZOabD",
+          "name": "Langfuse account"
+        }
+      },
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -182,13 +220,13 @@
           "renameFallbackOutput": "None or unsupported"
         }
       },
-      "id": "085f8c7c-c68d-4f43-aa45-2f728de8b09c",
+      "id": "c7405076-b070-4a74-b418-6282fdfecbaa",
       "name": "Route by action",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
       "position": [
         736,
-        512
+        960
       ]
     },
     {
@@ -205,18 +243,18 @@
           "outputFormat": "availability"
         }
       },
-      "id": "d51006db-8f69-4ec7-8adc-1a0440261d0d",
+      "id": "ee639a90-d183-43a2-b25d-e0b72b52dcb9",
       "name": "Re-check free/busy (new)",
       "type": "n8n-nodes-base.googleCalendar",
       "typeVersion": 1.3,
       "position": [
-        816,
-        224
+        1072,
+        96
       ],
       "credentials": {
         "googleCalendarOAuth2Api": {
-          "id": "FGqp1UtTPeBwJuII",
-          "name": "Google Calendar account"
+          "id": "f9ekqdeAlalROn06",
+          "name": "aiagenticlearner@gmail.com Calendar"
         }
       }
     },
@@ -245,13 +283,13 @@
         "looseTypeValidation": true,
         "options": {}
       },
-      "id": "d8d48f40-5002-4266-9a1d-b9eb1ae01fa0",
+      "id": "fba192bf-6584-4ff2-8e4f-f24f901b4a99",
       "name": "Still free? (new)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1040,
-        224
+        1296,
+        96
       ]
     },
     {
@@ -272,18 +310,18 @@
           "summary": "={{ $('Pick approved').item.json.act.title }}"
         }
       },
-      "id": "b3ed22aa-934f-47ff-a4b0-8c0f4cee6762",
+      "id": "9f712707-008a-4591-8d98-d8bdbb81b702",
       "name": "Create event",
       "type": "n8n-nodes-base.googleCalendar",
       "typeVersion": 1.3,
       "position": [
-        1264,
-        128
+        1520,
+        0
       ],
       "credentials": {
         "googleCalendarOAuth2Api": {
-          "id": "FGqp1UtTPeBwJuII",
-          "name": "Google Calendar account"
+          "id": "f9ekqdeAlalROn06",
+          "name": "aiagenticlearner@gmail.com Calendar"
         }
       }
     },
@@ -292,9 +330,10 @@
         "operation": "update",
         "dataTableId": {
           "__rl": true,
-          "mode": "id",
-          "value": "5NcIttwxWCVGLBLB",
-          "cachedResultName": "pending_proposals"
+          "value": "VQu5LL2NuzSKHghG",
+          "mode": "list",
+          "cachedResultName": "pending_proposals",
+          "cachedResultUrl": "/projects/duFL6azEOnaiy6gS/datatables/VQu5LL2NuzSKHghG"
         },
         "matchType": "allConditions",
         "filters": {
@@ -321,25 +360,88 @@
           "matchingColumns": [],
           "schema": [
             {
+              "id": "proposal_id",
+              "displayName": "proposal_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "agent",
+              "displayName": "agent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "action",
+              "displayName": "action",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "external",
+              "displayName": "external",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
               "id": "status",
               "displayName": "status",
               "required": false,
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true
+              "readOnly": false,
+              "removed": false
             }
-          ]
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
         },
         "options": {}
       },
-      "id": "69bc090e-739b-4bdb-945f-dd3b261c784d",
+      "id": "1c3a2897-1be6-4d26-848c-678a479a385e",
       "name": "Mark done",
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        1280,
-        288
+        1792,
+        912
       ]
     },
     {
@@ -368,13 +470,13 @@
         },
         "options": {}
       },
-      "id": "962bbf24-79d3-4bda-99b4-81b19d8c9cba",
+      "id": "a54d981a-1dac-4204-b0b0-40a87ebafb4d",
       "name": "Slot taken (new)",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1264,
-        320
+        1520,
+        192
       ]
     },
     {
@@ -391,18 +493,18 @@
           "outputFormat": "availability"
         }
       },
-      "id": "91de05e3-01b7-445c-98e2-16ffad466eca",
+      "id": "f0d3fa5e-f282-4724-a3db-eb34c85a45f7",
       "name": "Re-check free/busy (move)",
       "type": "n8n-nodes-base.googleCalendar",
       "typeVersion": 1.3,
       "position": [
-        816,
-        416
+        1072,
+        736
       ],
       "credentials": {
         "googleCalendarOAuth2Api": {
-          "id": "FGqp1UtTPeBwJuII",
-          "name": "Google Calendar account"
+          "id": "f9ekqdeAlalROn06",
+          "name": "aiagenticlearner@gmail.com Calendar"
         }
       }
     },
@@ -431,13 +533,13 @@
         "looseTypeValidation": true,
         "options": {}
       },
-      "id": "d8883df4-ef9f-49df-90cf-90301cd7361c",
+      "id": "5c81c1c7-cf45-4646-88c5-1918021110e6",
       "name": "Still free? (move)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1040,
-        416
+        1296,
+        736
       ]
     },
     {
@@ -464,18 +566,18 @@
           "summary": "={{ $('Pick approved').item.json.act.title }}"
         }
       },
-      "id": "d15f331c-4e2c-42d6-8c46-fd03d0f11e25",
+      "id": "fee18757-8e76-4de8-a14c-6e604dd144b5",
       "name": "Update event",
       "type": "n8n-nodes-base.googleCalendar",
       "typeVersion": 1.3,
       "position": [
-        1264,
-        320
+        1520,
+        640
       ],
       "credentials": {
         "googleCalendarOAuth2Api": {
-          "id": "FGqp1UtTPeBwJuII",
-          "name": "Google Calendar account"
+          "id": "f9ekqdeAlalROn06",
+          "name": "aiagenticlearner@gmail.com Calendar"
         }
       }
     },
@@ -505,13 +607,13 @@
         },
         "options": {}
       },
-      "id": "1d7e0669-4ac9-44a4-907f-65f5b4d83c51",
+      "id": "50512c9c-2598-4b48-9c0d-ffc74eac7193",
       "name": "Slot taken (move)",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1264,
-        512
+        1520,
+        832
       ]
     },
     {
@@ -525,42 +627,42 @@
           "ccList": "={{ ($('Pick approved').item.json.act.cc || []).join(\", \") }}"
         }
       },
-      "id": "a303eb6c-bfb2-4277-b8b4-b851d8ad3481",
+      "id": "dabd3d2c-78ed-4f81-8c25-ff3cfdce4c81",
       "name": "Send email",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.2,
       "position": [
-        912,
-        384
+        1296,
+        1104
       ],
-      "webhookId": "13a80c9f-0dd3-471d-9451-1edd773d9f75",
+      "webhookId": "9cb26006-2f04-4d3b-9f07-ccbd630439c5",
       "credentials": {
         "gmailOAuth2": {
-          "id": "2lEeYirZIRz3xJJ9",
-          "name": "Gmail account"
+          "id": "BXPis0WdaDF0urub",
+          "name": "aiagenticlearner@gmail.com"
         }
       }
     },
     {
       "parameters": {
-        "task": "@default",
+        "task": "MTM1MjM5NzQzNTk5ODY1MDUyMzA6MDow",
         "title": "={{ $('Pick approved').item.json.act.title }}",
         "additionalFields": {
           "dueDate": "={{ $('Pick approved').item.json.act.due || $now.plus(1, 'day').toISO() }}",
           "notes": "={{ $('Pick approved').item.json.act.notes || '' }}"
         }
       },
-      "id": "0d18392d-b5eb-486f-a54a-0b18486e4919",
+      "id": "01f1f166-7452-41db-8656-7f906f6a3d78",
       "name": "Create task",
       "type": "n8n-nodes-base.googleTasks",
       "typeVersion": 1,
       "position": [
-        912,
-        576
+        1296,
+        1296
       ],
       "credentials": {
         "googleTasksOAuth2Api": {
-          "id": "N8oH9DHHFg5YxEfo",
+          "id": "uxpviSlFOjh1W33V",
           "name": "Google Tasks account"
         }
       }
@@ -591,13 +693,13 @@
         },
         "options": {}
       },
-      "id": "0dc281d5-01c1-40c6-b748-4071a4516a5e",
+      "id": "d0bc5999-ff27-4b65-ac8c-ba3036d1c165",
       "name": "Return failed",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        912,
-        768
+        1296,
+        1488
       ]
     }
   ],
@@ -628,6 +730,11 @@
     "Pick approved": {
       "main": [
         [
+          {
+            "node": "Langfuse trace",
+            "type": "main",
+            "index": 0
+          },
           {
             "node": "Route by action",
             "type": "main",
@@ -781,47 +888,48 @@
   "active": true,
   "settings": {
     "executionOrder": "v1",
-    "binaryMode": "separate",
-    "errorWorkflow": "mgTS3Y2KolpDdVX0"
+    "binaryMode": "separate"
   },
-  "versionId": "35c9adf3-496f-4983-867d-099dc56b3ab0",
+  "versionId": "2bc581e3-95ca-4ef5-a55b-0d7658a928d6",
   "meta": {
-    "instanceId": "ec4f3655d17daa19a5288cbca637de661f51f490a4e49ce8a984f9e8ea511425"
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4d273b0de4bdb097868042158b95ef96a446b62fd1b2b5d27959556392b21b82"
   },
   "nodeGroups": [
     {
-      "id": "2f1c9634-e39d-4eeb-bf6b-9ef91894db25",
+      "id": "b4bd0f35-94c9-41d8-b73e-42b308302513",
       "name": "Load approved actions",
       "nodeIds": [
-        "db7f64ab-58d1-4a8e-a3dc-87577614facb",
-        "5868a916-3655-4fd9-aff1-f190de0ab220",
-        "085f8c7c-c68d-4f43-aa45-2f728de8b09c"
+        "50454256-cc6a-4d3e-9009-493bb7d8433e",
+        "6c972412-f737-4623-8305-7fc4752d9180",
+        "c7405076-b070-4a74-b418-6282fdfecbaa",
+        "41b3c9ca-bf38-4bda-b544-f858df5b05ff"
       ],
       "description": "Takes the approved ids and keeps only this user's pending rows, then routes each stored action by type"
     },
     {
-      "id": "1bc7d779-7a48-461a-9d2d-127d4ae6ffd4",
+      "id": "c13163a3-0a89-4056-9610-d0e0b96fe5eb",
       "name": "Book new meeting",
       "nodeIds": [
-        "d51006db-8f69-4ec7-8adc-1a0440261d0d",
-        "d8d48f40-5002-4266-9a1d-b9eb1ae01fa0",
-        "b3ed22aa-934f-47ff-a4b0-8c0f4cee6762",
-        "962bbf24-79d3-4bda-99b4-81b19d8c9cba"
+        "ee639a90-d183-43a2-b25d-e0b72b52dcb9",
+        "fba192bf-6584-4ff2-8e4f-f24f901b4a99",
+        "9f712707-008a-4591-8d98-d8bdbb81b702",
+        "a54d981a-1dac-4204-b0b0-40a87ebafb4d"
       ],
       "description": "Confirms the stored slot is still free right before booking; a taken slot is reported and left pending"
     },
     {
-      "id": "18a0cbf2-eb8f-48ac-8169-4b6feef8f9be",
+      "id": "cfd7e818-e78b-4088-8a6f-51d485a30375",
       "name": "Reschedule meeting",
       "nodeIds": [
-        "91de05e3-01b7-445c-98e2-16ffad466eca",
-        "d8883df4-ef9f-49df-90cf-90301cd7361c",
-        "d15f331c-4e2c-42d6-8c46-fd03d0f11e25",
-        "1d7e0669-4ac9-44a4-907f-65f5b4d83c51"
+        "f0d3fa5e-f282-4724-a3db-eb34c85a45f7",
+        "5c81c1c7-cf45-4646-88c5-1918021110e6",
+        "fee18757-8e76-4de8-a14c-6e604dd144b5",
+        "50512c9c-2598-4b48-9c0d-ffc74eac7193"
       ],
       "description": "Confirms the new slot is still free, then moves the meeting with the stored time, title and attendees"
     }
   ],
-  "id": "FoG2296FZmPnjcOS",
+  "id": "V3HgMNH4yEodJI37",
   "tags": []
 }

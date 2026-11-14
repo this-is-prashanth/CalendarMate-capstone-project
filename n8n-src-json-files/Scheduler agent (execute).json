@@ -14,13 +14,49 @@
           ]
         }
       },
-      "id": "648e6699-ec71-4786-bc76-26f1d9b4fb63",
+      "id": "5ce45c41-224f-46e2-9400-78641d17035f",
       "name": "When approved",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
       "position": [
         0,
-        288
+        704
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "t1",
+              "name": "trace_id",
+              "type": "string",
+              "value": "={{ (\"scheduler-execute-\" + $workflow.id + \"-\" + $execution.id).hash(\"md5\") }}"
+            },
+            {
+              "id": "t2",
+              "name": "span_id",
+              "type": "string",
+              "value": "={{ (\"scheduler-execute-\" + $workflow.id + \"-\" + $execution.id + \"-root\").hash(\"sha256\").slice(0, 16) }}"
+            },
+            {
+              "id": "t3",
+              "name": "trace_start",
+              "type": "string",
+              "value": "={{ $now.toISO() }}"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "8caebeb0-a43c-4b22-94a9-63a43b1c7454",
+      "name": "Start trace",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        288,
+        704
       ]
     },
     {
@@ -28,9 +64,10 @@
         "operation": "get",
         "dataTableId": {
           "__rl": true,
-          "mode": "id",
-          "value": "5NcIttwxWCVGLBLB",
-          "cachedResultName": "pending_proposals"
+          "value": "VQu5LL2NuzSKHghG",
+          "mode": "list",
+          "cachedResultName": "pending_proposals",
+          "cachedResultUrl": "/projects/duFL6azEOnaiy6gS/datatables/VQu5LL2NuzSKHghG"
         },
         "matchType": "allConditions",
         "filters": {
@@ -51,13 +88,13 @@
         },
         "returnAll": true
       },
-      "id": "37129c8d-6938-49a4-bda5-dc51866b8aae",
+      "id": "40ee3238-12a1-4d4b-b5ae-35ce41dd4d2a",
       "name": "Get pending proposals",
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        272,
-        448
+        512,
+        704
       ],
       "alwaysOutputData": true
     },
@@ -65,13 +102,13 @@
       "parameters": {
         "jsCode": "// Keep only this user's pending scheduler rows whose ids were approved.\n// The stored action is used as-is; nothing here re-writes it.\nconst input = $('When approved').first().json;\nconst user_id = String(input.user_id || '');\nlet ids = input.proposal_ids;\nif (typeof ids === 'string') { try { ids = JSON.parse(ids); } catch (e) { ids = ids.split(','); } }\nif (!Array.isArray(ids)) ids = ids ? [ids] : [];\nids = ids.map(s => String(s).trim()).filter(Boolean);\nconst rows = $input.all().map(i => i.json)\n  .filter(r => r.proposal_id && String(r.user_id) === user_id && r.status === 'pending' && ids.includes(r.proposal_id));\nconst out = [];\nconst bad = [];\nfor (const r of rows) {\n  let act;\n  try { act = JSON.parse(r.action); } catch (e) { bad.push(r.proposal_id); continue; }\n  // An approved time option (propose_times) means: book that slot.\n  // With an existing event_id it is a move; otherwise it is a new meeting.\n  if (['propose_times', 'propose_time', 'book_slot'].includes(act.type) && act.start && act.end) {\n    act.type = act.event_id ? 'reschedule_event' : 'create_event';\n  }\n  // Weekend rule: never book or move a meeting onto Saturday or Sunday (user's timezone).\n  if ((act.type === 'create_event' || act.type === 'reschedule_event') && act.start) {\n    const st = DateTime.fromISO(String(act.start), { setZone: true }).setZone('Asia/Kolkata');\n    if (st.isValid && st.weekday >= 6) {\n      out.push({ json: { proposal_id: r.proposal_id, user_id: r.user_id, type: 'weekend', summary: r.summary, act,\n        reason: 'Weekend: ' + st.toFormat('cccc d LLL, h:mm a') + ' falls on a ' + st.toFormat('cccc') + '. Meetings are not scheduled on Saturday or Sunday. Nothing was written; the proposal stays pending.' } });\n      continue;\n    }\n  }\n  out.push({ json: { proposal_id: r.proposal_id, user_id: r.user_id, type: act.type, summary: r.summary, act } });\n}\nif (!out.length) {\n  return [{ json: { type: 'none', proposal_id: ids.join(','),\n    reason: bad.length ? 'Stored actions could not be read: ' + bad.join(', ') : 'No pending scheduler proposals match these ids for this user' } }];\n}\nreturn out;"
       },
-      "id": "75b65628-f8a9-47ce-991c-474ad86c88d7",
+      "id": "818b6200-6487-4125-8850-55e2101875b1",
       "name": "Pick approved",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        496,
-        448
+        736,
+        704
       ]
     },
     {
@@ -154,13 +191,13 @@
           "renameFallbackOutput": "None or unsupported"
         }
       },
-      "id": "9a0155fc-0f5d-41fc-9de9-ba6d18db0b55",
+      "id": "d1f48af1-25b1-47e4-bde6-4a4a8d774ccc",
       "name": "Route by action",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
       "position": [
-        720,
-        416
+        1072,
+        864
       ]
     },
     {
@@ -177,18 +214,18 @@
           "outputFormat": "availability"
         }
       },
-      "id": "a3ee057a-8980-4dff-abf4-116e90c0eb93",
+      "id": "0627056c-78f3-4d20-a283-11edf40dff4c",
       "name": "Re-check free/busy (new)",
       "type": "n8n-nodes-base.googleCalendar",
       "typeVersion": 1.3,
       "position": [
-        800,
-        224
+        1296,
+        352
       ],
       "credentials": {
         "googleCalendarOAuth2Api": {
-          "id": "FGqp1UtTPeBwJuII",
-          "name": "Google Calendar account"
+          "id": "f9ekqdeAlalROn06",
+          "name": "aiagenticlearner@gmail.com Calendar"
         }
       }
     },
@@ -217,13 +254,13 @@
         "looseTypeValidation": true,
         "options": {}
       },
-      "id": "36cd9b86-30d9-4c5c-9591-5d4086758b19",
+      "id": "b9773cda-09ad-4898-b43f-925b4d0a3927",
       "name": "Still free? (new)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1024,
-        224
+        1520,
+        352
       ]
     },
     {
@@ -237,18 +274,18 @@
         "jsonBody": "={{ JSON.stringify({ timeMin: $('Pick approved').item.json.act.start, timeMax: $('Pick approved').item.json.act.end, items: ((ids) => ids.length ? ids : [$('Pick approved').item.json.act.calendar_id || 'primary'])((() => { const a = $('Pick approved').item.json.act; const self = [a.calendar_id].concat(a.self_emails || []).map(s => String(s || '').toLowerCase()); return [...new Set((a.attendees || []).map(x => String(x).trim().toLowerCase()).filter(x => x && !self.includes(x)))]; })()).map(id => ({ id })) }) }}",
         "options": {}
       },
-      "id": "2f7b3cb7-4689-4f7a-973e-ad15bcd49a27",
+      "id": "f2fd5719-ea11-46be-9b81-2860411798c4",
       "name": "Check invitees (new)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1248,
-        512
+        1744,
+        256
       ],
       "credentials": {
         "googleCalendarOAuth2Api": {
-          "id": "FGqp1UtTPeBwJuII",
-          "name": "Google Calendar account"
+          "id": "f9ekqdeAlalROn06",
+          "name": "aiagenticlearner@gmail.com Calendar"
         }
       },
       "onError": "continueRegularOutput"
@@ -278,13 +315,13 @@
         "looseTypeValidation": true,
         "options": {}
       },
-      "id": "7d340758-1213-4fb9-9878-7045ac82789f",
+      "id": "eca5f2b3-3589-4595-991e-e38fe1f2305f",
       "name": "Invitees free? (new)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1472,
-        512
+        1968,
+        256
       ]
     },
     {
@@ -305,18 +342,18 @@
           "summary": "={{ $('Pick approved').item.json.act.title }}"
         }
       },
-      "id": "7f38ce89-68f8-4dcd-bee4-6862db97d49e",
+      "id": "75379cbb-10b1-41c2-b565-5762c57a166a",
       "name": "Create event",
       "type": "n8n-nodes-base.googleCalendar",
       "typeVersion": 1.3,
       "position": [
-        1248,
-        128
+        2192,
+        160
       ],
       "credentials": {
         "googleCalendarOAuth2Api": {
-          "id": "FGqp1UtTPeBwJuII",
-          "name": "Google Calendar account"
+          "id": "f9ekqdeAlalROn06",
+          "name": "aiagenticlearner@gmail.com Calendar"
         }
       }
     },
@@ -325,9 +362,10 @@
         "operation": "update",
         "dataTableId": {
           "__rl": true,
-          "mode": "id",
-          "value": "5NcIttwxWCVGLBLB",
-          "cachedResultName": "pending_proposals"
+          "value": "VQu5LL2NuzSKHghG",
+          "mode": "list",
+          "cachedResultName": "pending_proposals",
+          "cachedResultUrl": "/projects/duFL6azEOnaiy6gS/datatables/VQu5LL2NuzSKHghG"
         },
         "matchType": "allConditions",
         "filters": {
@@ -351,8 +389,70 @@
           "value": {
             "status": "done"
           },
-          "matchingColumns": [],
+          "matchingColumns": [
+            "status"
+          ],
           "schema": [
+            {
+              "id": "proposal_id",
+              "displayName": "proposal_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "agent",
+              "displayName": "agent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "action",
+              "displayName": "action",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "external",
+              "displayName": "external",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
             {
               "id": "status",
               "displayName": "status",
@@ -360,19 +460,22 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true
+              "readOnly": false,
+              "removed": false
             }
-          ]
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
         },
         "options": {}
       },
-      "id": "8bc8fb6a-59b4-47d0-9214-bfcd72abcece",
+      "id": "0fc153f8-0056-47aa-b6cd-4094b07a83dc",
       "name": "Mark done",
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        1280,
-        192
+        2416,
+        128
       ]
     },
     {
@@ -401,13 +504,26 @@
         },
         "options": {}
       },
-      "id": "6e119e38-9836-4a2a-99c3-286a5e87b398",
+      "id": "ce8713d8-c0f9-4415-8d6a-c20da7239d50",
       "name": "Return done",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1504,
-        192
+        2640,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "numberInputs": 6
+      },
+      "id": "c4ce15e6-e651-43d4-81d5-6efb75955994",
+      "name": "Collect results",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2864,
+        592
       ]
     },
     {
@@ -436,13 +552,13 @@
         },
         "options": {}
       },
-      "id": "c196fbf6-5135-4423-86f0-e19dea36a040",
+      "id": "def493c1-410c-4ab2-8e36-066856967823",
       "name": "Invitees not free (new)",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1696,
-        608
+        2640,
+        320
       ]
     },
     {
@@ -471,13 +587,13 @@
         },
         "options": {}
       },
-      "id": "0bb5f69f-2133-4d7f-9c25-8cfbf07d1493",
+      "id": "85f85fc0-39c2-45c0-8931-8d28d51c8756",
       "name": "Slot taken (new)",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1248,
-        320
+        2640,
+        512
       ]
     },
     {
@@ -494,18 +610,18 @@
           "outputFormat": "availability"
         }
       },
-      "id": "16298066-201d-4abf-acf2-5c0f20e6164e",
+      "id": "c847aa2b-3d63-4f0a-a223-b82131cb6f5a",
       "name": "Re-check free/busy (move)",
       "type": "n8n-nodes-base.googleCalendar",
       "typeVersion": 1.3,
       "position": [
-        800,
-        416
+        1296,
+        832
       ],
       "credentials": {
         "googleCalendarOAuth2Api": {
-          "id": "FGqp1UtTPeBwJuII",
-          "name": "Google Calendar account"
+          "id": "f9ekqdeAlalROn06",
+          "name": "aiagenticlearner@gmail.com Calendar"
         }
       }
     },
@@ -534,13 +650,13 @@
         "looseTypeValidation": true,
         "options": {}
       },
-      "id": "c9681af4-9d44-4960-ae78-8c548b3f0a2c",
+      "id": "00915e14-e173-4955-96cb-012daa62000c",
       "name": "Still free? (move)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1024,
-        416
+        1520,
+        832
       ]
     },
     {
@@ -554,18 +670,18 @@
         "jsonBody": "={{ JSON.stringify({ timeMin: $('Pick approved').item.json.act.start, timeMax: $('Pick approved').item.json.act.end, items: ((ids) => ids.length ? ids : [$('Pick approved').item.json.act.calendar_id || 'primary'])((() => { const a = $('Pick approved').item.json.act; const self = [a.calendar_id].concat(a.self_emails || []).map(s => String(s || '').toLowerCase()); return [...new Set((a.attendees || []).map(x => String(x).trim().toLowerCase()).filter(x => x && !self.includes(x)))]; })()).map(id => ({ id })) }) }}",
         "options": {}
       },
-      "id": "5c1dac52-7b42-4d22-8995-b4f5f778c10d",
+      "id": "3d23522f-417c-43bc-b6ae-c666e6233502",
       "name": "Check invitees (move)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1248,
-        704
+        1744,
+        736
       ],
       "credentials": {
         "googleCalendarOAuth2Api": {
-          "id": "FGqp1UtTPeBwJuII",
-          "name": "Google Calendar account"
+          "id": "f9ekqdeAlalROn06",
+          "name": "aiagenticlearner@gmail.com Calendar"
         }
       },
       "onError": "continueRegularOutput"
@@ -595,13 +711,13 @@
         "looseTypeValidation": true,
         "options": {}
       },
-      "id": "87cd71bb-d5ed-4136-a127-4f568655f47d",
+      "id": "5888ba8c-e06f-48da-8020-db48194e903f",
       "name": "Invitees free? (move)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1472,
-        704
+        1968,
+        736
       ]
     },
     {
@@ -619,18 +735,18 @@
           "start": "={{ $('Pick approved').item.json.act.start }}"
         }
       },
-      "id": "a8b5a133-e9b0-4985-a2e9-6ad9e3abbbf4",
+      "id": "dbf8fd8d-ec38-4824-9350-a0bba3ef275f",
       "name": "Move event",
       "type": "n8n-nodes-base.googleCalendar",
       "typeVersion": 1.3,
       "position": [
-        1248,
-        320
+        2192,
+        656
       ],
       "credentials": {
         "googleCalendarOAuth2Api": {
-          "id": "FGqp1UtTPeBwJuII",
-          "name": "Google Calendar account"
+          "id": "f9ekqdeAlalROn06",
+          "name": "aiagenticlearner@gmail.com Calendar"
         }
       }
     },
@@ -660,12 +776,12 @@
         },
         "options": {}
       },
-      "id": "4ca18e59-e863-4525-abba-3b77b604bc52",
+      "id": "37518877-c96e-4474-8b0b-c6db3526e120",
       "name": "Invitees not free (move)",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1696,
+        2640,
         800
       ]
     },
@@ -695,13 +811,13 @@
         },
         "options": {}
       },
-      "id": "8b2ab15a-0be4-4548-a362-8feb407c4dbd",
+      "id": "4e78835b-fe4d-4755-aca9-a102e41a651a",
       "name": "Slot taken (move)",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1248,
-        512
+        2640,
+        992
       ]
     },
     {
@@ -717,18 +833,18 @@
           "sendUpdates": "all"
         }
       },
-      "id": "df59609a-ab40-45c9-a320-2185e3747523",
+      "id": "f388c053-77f5-4c64-b9da-64342ffb7ad3",
       "name": "Cancel event",
       "type": "n8n-nodes-base.googleCalendar",
       "typeVersion": 1.3,
       "position": [
-        912,
-        384
+        2192,
+        1136
       ],
       "credentials": {
         "googleCalendarOAuth2Api": {
-          "id": "FGqp1UtTPeBwJuII",
-          "name": "Google Calendar account"
+          "id": "f9ekqdeAlalROn06",
+          "name": "aiagenticlearner@gmail.com Calendar"
         }
       }
     },
@@ -758,19 +874,82 @@
         },
         "options": {}
       },
-      "id": "8c017bd5-67f1-4657-8843-8e085b7bddee",
+      "id": "d35ea9a7-e999-491d-960b-489eb63f09c4",
       "name": "Return failed",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        912,
-        576
+        2640,
+        1280
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://cloud.langfuse.com/api/public/otel/v1/traces",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "langfuseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-langfuse-ingestion-version",
+              "value": "4"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify((() => {\n  const s = $('Start trace').first().json;\n  const userId = s.user_id ? String(s.user_id) : null;\n  const results = $('Collect results').all().map(i => i.json);\n  const done = results.filter(r => r.status === 'done').length;\n  const failed = results.filter(r => r.status === 'failed').length;\n  const status = failed === 0 ? 'ok' : (done > 0 ? 'partial' : 'failed');\n  const actions = $('Pick approved').all().map(i => ({ proposal_id: i.json.proposal_id, type: i.json.type, summary: i.json.summary }));\n  const input = { user_id: s.user_id, proposal_ids: s.proposal_ids, actions };\n  const startNs = String(DateTime.fromISO(s.trace_start).toMillis()) + '000000';\n  const endNs = String($now.toMillis()) + '000000';\n  const str = (k, v) => ({ key: k, value: { stringValue: String(v == null ? '' : v) } });\n  const attrs = [\n    str('langfuse.trace.name', 'scheduler-execute'),\n    str('langfuse.observation.type', 'agent'),\n    str('langfuse.observation.input', JSON.stringify(input)),\n    str('langfuse.observation.output', JSON.stringify(results)),\n    str('langfuse.observation.level', status === 'ok' ? 'DEFAULT' : (status === 'partial' ? 'WARNING' : 'ERROR')),\n    str('langfuse.observation.status_message', results.map(r => r.notes || '').filter(Boolean).join(' | ').slice(0, 1000)),\n    { key: 'langfuse.trace.tags', value: { arrayValue: { values: [{ stringValue: 'n8n' }, { stringValue: 'scheduler-execute' }] } } },\n    str('langfuse.trace.metadata.workflow_id', $workflow.id),\n    str('langfuse.trace.metadata.workflow_name', $workflow.name),\n    str('langfuse.trace.metadata.execution_id', $execution.id),\n    str('langfuse.trace.metadata.mode', $execution.mode),\n    str('langfuse.trace.metadata.status', status),\n    str('langfuse.trace.metadata.done_count', done),\n    str('langfuse.trace.metadata.failed_count', failed)\n  ];\n  if (userId) attrs.push(str('langfuse.user.id', userId));\n  return { resourceSpans: [{\n    resource: { attributes: [str('service.name', 'n8n')] },\n    scopeSpans: [{ scope: { name: 'n8n-scheduler-execute' }, spans: [{\n      traceId: s.trace_id, spanId: s.span_id, name: 'Scheduler agent (execute)', kind: 1,\n      startTimeUnixNano: startNs, endTimeUnixNano: endNs,\n      attributes: attrs,\n      status: { code: status === 'ok' ? 1 : 2 }\n    }] }]\n  }] };\n})()) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "af0618ec-c33f-4af8-8519-c1e8e6ad6712",
+      "name": "Send trace to Langfuse",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        3200,
+        704
+      ],
+      "executeOnce": true,
+      "credentials": {
+        "langfuseApi": {
+          "id": "NScmg3aAxJmZOabD",
+          "name": "Langfuse account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Hand every per-proposal result back to the caller, unchanged by the trace call.\nreturn $('Collect results').all().map(i => ({ json: i.json }));"
+      },
+      "id": "d8a0610d-d455-4325-a471-bcfe6fcc4c5f",
+      "name": "Return results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3424,
+        704
       ]
     }
   ],
   "pinData": {},
   "connections": {
     "When approved": {
+      "main": [
+        [
+          {
+            "node": "Start trace",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start trace": {
       "main": [
         [
           {
@@ -915,6 +1094,50 @@
         ]
       ]
     },
+    "Return done": {
+      "main": [
+        [
+          {
+            "node": "Collect results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect results": {
+      "main": [
+        [
+          {
+            "node": "Send trace to Langfuse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Invitees not free (new)": {
+      "main": [
+        [
+          {
+            "node": "Collect results",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Slot taken (new)": {
+      "main": [
+        [
+          {
+            "node": "Collect results",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
     "Re-check free/busy (move)": {
       "main": [
         [
@@ -984,6 +1207,28 @@
         ]
       ]
     },
+    "Invitees not free (move)": {
+      "main": [
+        [
+          {
+            "node": "Collect results",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Slot taken (move)": {
+      "main": [
+        [
+          {
+            "node": "Collect results",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
     "Cancel event": {
       "main": [
         [
@@ -994,67 +1239,87 @@
           }
         ]
       ]
+    },
+    "Return failed": {
+      "main": [
+        [
+          {
+            "node": "Collect results",
+            "type": "main",
+            "index": 5
+          }
+        ]
+      ]
+    },
+    "Send trace to Langfuse": {
+      "main": [
+        [
+          {
+            "node": "Return results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
   "settings": {
     "executionOrder": "v1",
-    "binaryMode": "separate",
-    "errorWorkflow": "mgTS3Y2KolpDdVX0"
+    "binaryMode": "separate"
   },
-  "versionId": "4fa52427-e3c1-4c79-b08d-788d520b29aa",
+  "versionId": "f0418f91-7867-4f9b-8152-fd747ccf2bd8",
   "meta": {
-    "instanceId": "ec4f3655d17daa19a5288cbca637de661f51f490a4e49ce8a984f9e8ea511425"
+    "instanceId": "4d273b0de4bdb097868042158b95ef96a446b62fd1b2b5d27959556392b21b82"
   },
   "nodeGroups": [
     {
-      "id": "8fdbd6b3-c0ac-4bf5-9554-26828769a5b5",
+      "id": "75fad13f-bdae-4a12-8442-7a38a760050a",
       "name": "Load approved actions",
       "nodeIds": [
-        "37129c8d-6938-49a4-bda5-dc51866b8aae",
-        "75b65628-f8a9-47ce-991c-474ad86c88d7",
-        "9a0155fc-0f5d-41fc-9de9-ba6d18db0b55"
+        "8caebeb0-a43c-4b22-94a9-63a43b1c7454",
+        "40ee3238-12a1-4d4b-b5ae-35ce41dd4d2a",
+        "818b6200-6487-4125-8850-55e2101875b1"
       ],
-      "description": "Takes the approved ids and keeps only this user's pending scheduler rows, then routes each stored action by type"
+      "description": "Starts the trace, then keeps only this user's pending scheduler rows whose ids were approved"
     },
     {
-      "id": "e5dba47a-0a68-42b5-b8fe-151ee972ffee",
-      "name": "Book new meeting",
+      "id": "856c97d2-baab-4a19-b5c9-b8a5d2404f4b",
+      "name": "Apply approved actions",
       "nodeIds": [
-        "a3ee057a-8980-4dff-abf4-116e90c0eb93",
-        "36cd9b86-30d9-4c5c-9591-5d4086758b19",
-        "2f7b3cb7-4689-4f7a-973e-ad15bcd49a27",
-        "7d340758-1213-4fb9-9878-7045ac82789f",
-        "7f38ce89-68f8-4dcd-bee4-6862db97d49e",
-        "0bb5f69f-2133-4d7f-9c25-8cfbf07d1493",
-        "c196fbf6-5135-4423-86f0-e19dea36a040"
+        "d1f48af1-25b1-47e4-bde6-4a4a8d774ccc",
+        "0627056c-78f3-4d20-a283-11edf40dff4c",
+        "b9773cda-09ad-4898-b43f-925b4d0a3927",
+        "f2fd5719-ea11-46be-9b81-2860411798c4",
+        "eca5f2b3-3589-4595-991e-e38fe1f2305f",
+        "75379cbb-10b1-41c2-b565-5762c57a166a",
+        "85f85fc0-39c2-45c0-8931-8d28d51c8756",
+        "def493c1-410c-4ab2-8e36-066856967823",
+        "c847aa2b-3d63-4f0a-a223-b82131cb6f5a",
+        "00915e14-e173-4955-96cb-012daa62000c",
+        "3d23522f-417c-43bc-b6ae-c666e6233502",
+        "5888ba8c-e06f-48da-8020-db48194e903f",
+        "dbf8fd8d-ec38-4824-9350-a0bba3ef275f",
+        "4e78835b-fe4d-4755-aca9-a102e41a651a",
+        "37518877-c96e-4474-8b0b-c6db3526e120",
+        "f388c053-77f5-4c64-b9da-64342ffb7ad3",
+        "0fc153f8-0056-47aa-b6cd-4094b07a83dc",
+        "ce8713d8-c0f9-4415-8d6a-c20da7239d50",
+        "d35ea9a7-e999-491d-960b-489eb63f09c4",
+        "c4ce15e6-e651-43d4-81d5-6efb75955994"
       ],
-      "description": "Right before booking, confirms your slot and every invitee are free; anything busy or unreadable is reported and left pending"
+      "description": "Books, moves or cancels each meeting only if you and every invitee are free; marks it done or leaves it pending"
     },
     {
-      "id": "95e9461b-d277-49f8-95b0-1ea3ee84997c",
-      "name": "Reschedule meeting",
+      "id": "99302e41-e6ea-4284-8c3f-5311bc9ee8bb",
+      "name": "Report run to Langfuse",
       "nodeIds": [
-        "16298066-201d-4abf-acf2-5c0f20e6164e",
-        "c9681af4-9d44-4960-ae78-8c548b3f0a2c",
-        "5c1dac52-7b42-4d22-8995-b4f5f778c10d",
-        "87cd71bb-d5ed-4136-a127-4f568655f47d",
-        "a8b5a133-e9b0-4985-a2e9-6ad9e3abbbf4",
-        "8b2ab15a-0be4-4548-a362-8feb407c4dbd",
-        "4ca18e59-e863-4525-abba-3b77b604bc52"
+        "af0618ec-c33f-4af8-8519-c1e8e6ad6712",
+        "d8a0610d-d455-4325-a471-bcfe6fcc4c5f"
       ],
-      "description": "Confirms the new time is free for you and every listed invitee, then moves only the time"
-    },
-    {
-      "id": "253753b5-24c5-4927-bacb-2628e0afd37a",
-      "name": "Record result",
-      "nodeIds": [
-        "8bc8fb6a-59b4-47d0-9214-bfcd72abcece",
-        "6e119e38-9836-4a2a-99c3-286a5e87b398"
-      ],
-      "description": "Marks each applied proposal done so it cannot run twice, and reports it back to the router"
+      "description": "Sends one trace with every result and its status, then hands the results back to the caller"
     }
   ],
-  "id": "ltULLA6OTr7Ytr69",
+  "id": "bLajRfm7zM7nPnUr",
   "tags": []
 }

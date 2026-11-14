@@ -14,13 +14,49 @@
           ]
         }
       },
-      "id": "5af21e1a-2f30-4cfa-8f88-eeda86205484",
+      "id": "3a437114-1be1-4bf1-8d50-ea60ed5bd821",
       "name": "When approved",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
       "position": [
         0,
-        96
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "t1",
+              "name": "trace_id",
+              "type": "string",
+              "value": "={{ (\"email-execute-\" + $workflow.id + \"-\" + $execution.id).hash(\"md5\") }}"
+            },
+            {
+              "id": "t2",
+              "name": "span_id",
+              "type": "string",
+              "value": "={{ (\"email-execute-\" + $workflow.id + \"-\" + $execution.id + \"-root\").hash(\"sha256\").slice(0, 16) }}"
+            },
+            {
+              "id": "t3",
+              "name": "trace_start",
+              "type": "string",
+              "value": "={{ $now.toISO() }}"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "9a931f53-2568-4b77-b11d-97097933f852",
+      "name": "Start trace",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        192
       ]
     },
     {
@@ -28,9 +64,10 @@
         "operation": "get",
         "dataTableId": {
           "__rl": true,
-          "mode": "id",
-          "value": "5NcIttwxWCVGLBLB",
-          "cachedResultName": "pending_proposals"
+          "value": "VQu5LL2NuzSKHghG",
+          "mode": "list",
+          "cachedResultName": "pending_proposals",
+          "cachedResultUrl": "/projects/duFL6azEOnaiy6gS/datatables/VQu5LL2NuzSKHghG"
         },
         "matchType": "allConditions",
         "filters": {
@@ -51,13 +88,13 @@
         },
         "returnAll": true
       },
-      "id": "3974fc97-a449-4480-83c7-1f7c2087212f",
+      "id": "35e55beb-1c48-4721-a416-d65358490fed",
       "name": "Get pending proposals",
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        272,
-        224
+        512,
+        192
       ],
       "alwaysOutputData": true
     },
@@ -65,13 +102,13 @@
       "parameters": {
         "jsCode": "// Keep only this user's pending email rows whose ids were approved.\n// The stored action is used as-is; nothing here re-writes it.\nconst input = $('When approved').first().json;\nconst user_id = String(input.user_id || '');\nlet ids = input.proposal_ids;\nif (typeof ids === 'string') { try { ids = JSON.parse(ids); } catch (e) { ids = ids.split(','); } }\nif (!Array.isArray(ids)) ids = ids ? [ids] : [];\nids = ids.map(s => String(s).trim()).filter(Boolean);\nconst rows = $input.all().map(i => i.json)\n  .filter(r => r.proposal_id && String(r.user_id) === user_id && r.status === 'pending' && ids.includes(r.proposal_id));\nconst out = [];\nconst bad = [];\nfor (const r of rows) {\n  let act;\n  try { act = JSON.parse(r.action); } catch (e) { bad.push(r.proposal_id); continue; }\n  out.push({ json: { proposal_id: r.proposal_id, user_id: r.user_id, type: act.action || act.type, summary: r.summary, act } });\n}\nif (!out.length) {\n  return [{ json: { type: 'none', proposal_id: ids.join(','),\n    reason: bad.length ? 'Stored actions could not be read: ' + bad.join(', ') : 'No pending email proposals match these ids for this user' } }];\n}\nreturn out;"
       },
-      "id": "dd10aca7-6ffd-4f09-9354-14248b5f3d92",
+      "id": "967e1c89-a553-4da1-a310-90bc0896e525",
       "name": "Pick approved",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        496,
-        224
+        736,
+        192
       ]
     },
     {
@@ -99,13 +136,13 @@
         "looseTypeValidation": true,
         "options": {}
       },
-      "id": "644fab74-ecd5-4515-930e-8ed47c560e5d",
+      "id": "0ec3c139-5ec1-41af-8bf7-2ad8433c4427",
       "name": "Is a draft to send?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        752,
-        96
+        1072,
+        192
       ]
     },
     {
@@ -119,20 +156,20 @@
         "jsonBody": "={{ JSON.stringify({ id: $json.act.draft_id }) }}",
         "options": {}
       },
-      "id": "3d3ae04b-95c9-44f9-aafe-162c19c6634b",
+      "id": "b7dad356-880e-4f8c-ba46-bc832d8da8cd",
       "name": "Send draft",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
       "position": [
-        1024,
-        224
+        1296,
+        96
       ],
       "retryOnFail": true,
       "maxTries": 3,
       "credentials": {
         "gmailOAuth2": {
-          "id": "2lEeYirZIRz3xJJ9",
-          "name": "Gmail account"
+          "id": "BXPis0WdaDF0urub",
+          "name": "aiagenticlearner@gmail.com"
         }
       },
       "onError": "continueErrorOutput"
@@ -142,9 +179,10 @@
         "operation": "update",
         "dataTableId": {
           "__rl": true,
-          "mode": "id",
-          "value": "5NcIttwxWCVGLBLB",
-          "cachedResultName": "pending_proposals"
+          "value": "VQu5LL2NuzSKHghG",
+          "mode": "list",
+          "cachedResultName": "pending_proposals",
+          "cachedResultUrl": "/projects/duFL6azEOnaiy6gS/datatables/VQu5LL2NuzSKHghG"
         },
         "matchType": "allConditions",
         "filters": {
@@ -168,8 +206,70 @@
           "value": {
             "status": "done"
           },
-          "matchingColumns": [],
+          "matchingColumns": [
+            "status"
+          ],
           "schema": [
+            {
+              "id": "proposal_id",
+              "displayName": "proposal_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "agent",
+              "displayName": "agent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "action",
+              "displayName": "action",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "external",
+              "displayName": "external",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
             {
               "id": "status",
               "displayName": "status",
@@ -177,19 +277,22 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true
+              "readOnly": false,
+              "removed": false
             }
-          ]
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
         },
         "options": {}
       },
-      "id": "6de3db56-0bd6-4d92-8644-d17e89388961",
+      "id": "177f270b-7fa0-4885-82c2-aaf60a95f67d",
       "name": "Mark done",
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        1248,
-        128
+        1520,
+        0
       ]
     },
     {
@@ -218,13 +321,26 @@
         },
         "options": {}
       },
-      "id": "657c7739-3874-4e0d-81a0-b3f708a71079",
+      "id": "8b5a6546-d9a5-40a7-a541-c786543edbaa",
       "name": "Return done",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1472,
-        128
+        1744,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "id": "12e00cb9-6e0d-4e1c-87d2-d8244bb7aedf",
+      "name": "Collect results",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1968,
+        176
       ]
     },
     {
@@ -253,13 +369,13 @@
         },
         "options": {}
       },
-      "id": "2f4c88d1-84b6-4170-9cac-17b2fab00858",
+      "id": "a5ceb909-20ca-42e4-ac46-5a60228f1760",
       "name": "Send failed",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1248,
-        320
+        1744,
+        192
       ]
     },
     {
@@ -288,12 +404,64 @@
         },
         "options": {}
       },
-      "id": "f9856f32-76e7-450d-a1cb-496adc73ea1f",
+      "id": "65157430-a31d-46ed-bfb7-2ace9e0e591d",
       "name": "Return failed",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1136,
+        1744,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://cloud.langfuse.com/api/public/otel/v1/traces",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "langfuseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-langfuse-ingestion-version",
+              "value": "4"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify((() => {\n  const s = $('Start trace').first().json;\n  const userId = s.user_id ? String(s.user_id) : null;\n  const results = $('Collect results').all().map(i => i.json);\n  const done = results.filter(r => r.status === 'done').length;\n  const failed = results.filter(r => r.status === 'failed').length;\n  const status = failed === 0 ? 'ok' : (done > 0 ? 'partial' : 'failed');\n  const input = { user_id: s.user_id, proposal_ids: s.proposal_ids };\n  const startNs = String(DateTime.fromISO(s.trace_start).toMillis()) + '000000';\n  const endNs = String($now.toMillis()) + '000000';\n  const str = (k, v) => ({ key: k, value: { stringValue: String(v == null ? '' : v) } });\n  const attrs = [\n    str('langfuse.trace.name', 'cm-email-execute'),\n    str('langfuse.observation.type', 'agent'),\n    str('langfuse.observation.input', JSON.stringify(input)),\n    str('langfuse.observation.output', JSON.stringify(results)),\n    str('langfuse.observation.level', status === 'ok' ? 'DEFAULT' : (status === 'partial' ? 'WARNING' : 'ERROR')),\n    str('langfuse.observation.status_message', results.map(r => r.notes || '').filter(Boolean).join(' | ').slice(0, 1000)),\n    { key: 'langfuse.trace.tags', value: { arrayValue: { values: [{ stringValue: 'n8n' }, { stringValue: 'cm-email-execute' }] } } },\n    str('langfuse.trace.metadata.workflow_id', $workflow.id),\n    str('langfuse.trace.metadata.workflow_name', $workflow.name),\n    str('langfuse.trace.metadata.execution_id', $execution.id),\n    str('langfuse.trace.metadata.mode', $execution.mode),\n    str('langfuse.trace.metadata.status', status),\n    str('langfuse.trace.metadata.sent_count', done),\n    str('langfuse.trace.metadata.failed_count', failed)\n  ];\n  if (userId) attrs.push(str('langfuse.user.id', userId));\n  return { resourceSpans: [{\n    resource: { attributes: [str('service.name', 'n8n')] },\n    scopeSpans: [{ scope: { name: 'n8n-cm-email-execute' }, spans: [{\n      traceId: s.trace_id, spanId: s.span_id, name: 'Email agent (execute)', kind: 1,\n      startTimeUnixNano: startNs, endTimeUnixNano: endNs,\n      attributes: attrs,\n      status: { code: status === 'ok' ? 1 : 2 }\n    }] }]\n  }] };\n})()) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "0d869137-6925-4beb-8758-f74353d63e6e",
+      "name": "Send trace to Langfuse",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        2240,
+        192
+      ],
+      "executeOnce": true,
+      "credentials": {
+        "langfuseApi": {
+          "id": "NScmg3aAxJmZOabD",
+          "name": "Langfuse account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Hand every per-proposal result back to the caller, unchanged by the trace call.\nreturn $('Collect results').all().map(i => ({ json: i.json }));"
+      },
+      "id": "c6ccbde7-53e9-4201-be1e-d3f790f04cc5",
+      "name": "Return results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2464,
         192
       ]
     }
@@ -301,6 +469,17 @@
   "pinData": {},
   "connections": {
     "When approved": {
+      "main": [
+        [
+          {
+            "node": "Start trace",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start trace": {
       "main": [
         [
           {
@@ -379,40 +558,97 @@
           }
         ]
       ]
+    },
+    "Return done": {
+      "main": [
+        [
+          {
+            "node": "Collect results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect results": {
+      "main": [
+        [
+          {
+            "node": "Send trace to Langfuse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send failed": {
+      "main": [
+        [
+          {
+            "node": "Collect results",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Return failed": {
+      "main": [
+        [
+          {
+            "node": "Collect results",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Send trace to Langfuse": {
+      "main": [
+        [
+          {
+            "node": "Return results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
   "settings": {
     "executionOrder": "v1",
-    "binaryMode": "separate",
-    "errorWorkflow": "mgTS3Y2KolpDdVX0"
+    "binaryMode": "separate"
   },
-  "versionId": "a1b4fa4b-90c4-48f7-b8f1-7ff08ff6886a",
+  "versionId": "38094736-fbf2-4d0e-a379-ccc4e599234f",
   "meta": {
-    "instanceId": "ec4f3655d17daa19a5288cbca637de661f51f490a4e49ce8a984f9e8ea511425"
+    "instanceId": "4d273b0de4bdb097868042158b95ef96a446b62fd1b2b5d27959556392b21b82"
   },
   "nodeGroups": [
     {
-      "id": "e9005e29-1910-4d21-bc1c-b5e3e3fec872",
+      "id": "0150e710-751f-43b4-bc48-e1434773c7c5",
       "name": "Find approved drafts",
       "nodeIds": [
-        "3974fc97-a449-4480-83c7-1f7c2087212f",
-        "dd10aca7-6ffd-4f09-9354-14248b5f3d92"
+        "35e55beb-1c48-4721-a416-d65358490fed",
+        "967e1c89-a553-4da1-a310-90bc0896e525"
       ],
       "description": "Reads this user's pending email proposals and keeps only the ids approved in chat or Slack"
     },
     {
-      "id": "6b5f51bb-e3e6-4192-9d36-7d2926385e27",
+      "id": "69dc9847-d02a-439b-8b90-3da2357fc950",
       "name": "Send and record",
       "nodeIds": [
-        "3d3ae04b-95c9-44f9-aafe-162c19c6634b",
-        "6de3db56-0bd6-4d92-8644-d17e89388961",
-        "657c7739-3874-4e0d-81a0-b3f708a71079",
-        "2f4c88d1-84b6-4170-9cac-17b2fab00858"
+        "0ec3c139-5ec1-41af-8bf7-2ad8433c4427",
+        "b7dad356-880e-4f8c-ba46-bc832d8da8cd",
+        "177f270b-7fa0-4885-82c2-aaf60a95f67d",
+        "8b5a6546-d9a5-40a7-a541-c786543edbaa",
+        "a5ceb909-20ca-42e4-ac46-5a60228f1760",
+        "65157430-a31d-46ed-bfb7-2ace9e0e591d",
+        "12e00cb9-6e0d-4e1c-87d2-d8244bb7aedf"
       ],
       "description": "Sends the saved Gmail draft, marks the proposal done; if Gmail refuses, the proposal stays pending"
     }
   ],
-  "id": "Uu1sdCpnZpJ8v8co",
+  "id": "69h56LOKV7qaAMQA",
   "tags": []
 }

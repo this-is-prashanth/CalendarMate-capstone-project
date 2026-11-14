@@ -10,16 +10,64 @@
             },
             {
               "name": "user_id"
+            },
+            {
+              "name": "trace_id"
+            },
+            {
+              "name": "parent_span_id"
             }
           ]
         }
       },
-      "id": "8337cf4a-7911-44f1-b3c7-6b7dd21c60fb",
+      "id": "60675101-87c0-4bbb-a309-6bf171223ef7",
       "name": "Start",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.3,
       "position": [
         0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "t1",
+              "name": "trace_id",
+              "type": "string",
+              "value": "={{ $json.trace_id || (\"cm-read-thread-\" + $workflow.id + \"-\" + $execution.id).hash(\"md5\") }}"
+            },
+            {
+              "id": "t2",
+              "name": "span_id",
+              "type": "string",
+              "value": "={{ (\"cm-read-thread-\" + $workflow.id + \"-\" + $execution.id + \"-span\").hash(\"sha256\").slice(0, 16) }}"
+            },
+            {
+              "id": "t3",
+              "name": "parent_span_id",
+              "type": "string",
+              "value": "={{ $json.parent_span_id || \"\" }}"
+            },
+            {
+              "id": "t4",
+              "name": "trace_start",
+              "type": "string",
+              "value": "={{ $now.toISO() }}"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "d3cb3d7e-7ab1-4486-a1ac-f209597d6187",
+      "name": "Start trace",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        224,
         0
       ]
     },
@@ -31,56 +79,148 @@
         "simple": false,
         "options": {}
       },
-      "id": "22e5aa6f-4255-4805-8ef0-804485ce54a0",
+      "id": "17b6ddc6-79de-4170-87fc-f99d48314d8d",
       "name": "Get thread",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.2,
       "position": [
-        224,
+        448,
         0
       ],
-      "webhookId": "7cebbae9-47c1-49fe-a2f7-b086c1c71cbd",
+      "webhookId": "82c47901-ae07-4357-bae2-c95477e27cb3",
       "credentials": {
         "gmailOAuth2": {
-          "id": "2lEeYirZIRz3xJJ9",
-          "name": "Gmail account"
+          "id": "BXPis0WdaDF0urub",
+          "name": "aiagenticlearner@gmail.com"
         }
-      }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f1",
+              "name": "thread_id",
+              "type": "string",
+              "value": "={{ $('Start trace').first().json.thread_id }}"
+            },
+            {
+              "id": "f2",
+              "name": "untrusted_email_content",
+              "type": "boolean",
+              "value": true
+            },
+            {
+              "id": "f3",
+              "name": "messages",
+              "type": "array",
+              "value": "={{ [] }}"
+            },
+            {
+              "id": "f4",
+              "name": "error",
+              "type": "string",
+              "value": "={{ $json.error ? ($json.error.message || String($json.error)) : 'Gmail thread fetch failed' }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5fd4b741-4ca8-4671-b722-724e4f973aad",
+      "name": "Read failed",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        672,
+        192
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://cloud.langfuse.com/api/public/otel/v1/traces",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "langfuseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-langfuse-ingestion-version",
+              "value": "4"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify((() => {\n  const s = $('Start trace').first().json;\n  const failed = $('Read failed').isExecuted;\n  const out = (failed ? $('Read failed') : $('Decode thread')).first().json;\n  const startNs = String(DateTime.fromISO(s.trace_start).toMillis()) + '000000';\n  const endNs = String($now.toMillis()) + '000000';\n  const str = (k, v) => ({ key: k, value: { stringValue: String(v == null ? '' : v) } });\n  const nested = !!s.parent_span_id;\n  const attrs = [\n    str('langfuse.observation.type', 'tool'),\n    str('langfuse.observation.input', JSON.stringify({ thread_id: s.thread_id })),\n    str('langfuse.observation.output', failed ? out.error : JSON.stringify({ thread_id: out.thread_id, message_count: (out.messages || []).length, chars: (out.messages || []).reduce((n, m) => n + (m.body || '').length, 0) })),\n    str('langfuse.observation.level', failed ? 'ERROR' : 'DEFAULT'),\n    str('langfuse.observation.status_message', failed ? out.error : ''),\n    str('langfuse.observation.metadata.workflow_id', $workflow.id),\n    str('langfuse.observation.metadata.execution_id', $execution.id),\n    str('langfuse.observation.metadata.message_count', (out.messages || []).length)\n  ];\n  if (!nested) {\n    attrs.push(str('langfuse.trace.name', 'cm-read-thread'));\n    attrs.push({ key: 'langfuse.trace.tags', value: { arrayValue: { values: [{ stringValue: 'n8n' }, { stringValue: 'cm-read-thread' }] } } });\n    attrs.push(str('langfuse.trace.metadata.workflow_name', $workflow.name));\n    attrs.push(str('langfuse.trace.metadata.mode', $execution.mode));\n  }\n  if (s.user_id) attrs.push(str('langfuse.user.id', s.user_id));\n  const span = {\n    traceId: s.trace_id, spanId: s.span_id, name: 'read_thread', kind: 1,\n    startTimeUnixNano: startNs, endTimeUnixNano: endNs,\n    attributes: attrs,\n    status: { code: failed ? 2 : 1 }\n  };\n  if (nested) span.parentSpanId = s.parent_span_id;\n  return { resourceSpans: [{\n    resource: { attributes: [str('service.name', 'n8n')] },\n    scopeSpans: [{ scope: { name: 'n8n-cm-read-thread' }, spans: [span] }]\n  }] };\n})()) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "11daf5cc-1614-4352-947d-fb2fd8a6c5f9",
+      "name": "Send trace to Langfuse",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        896,
+        192
+      ],
+      "executeOnce": true,
+      "credentials": {
+        "langfuseApi": {
+          "id": "NScmg3aAxJmZOabD",
+          "name": "Langfuse account"
+        }
+      },
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
         "jsCode": "const t = $input.first().json;\nconst decode = (b64) => Buffer.from(b64.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8');\nconst walk = (part) => {\n  if (!part) return { text: '', html: '' };\n  if (part.mimeType === 'text/plain' && part.body && part.body.data) return { text: decode(part.body.data), html: '' };\n  if (part.mimeType === 'text/html' && part.body && part.body.data) return { text: '', html: decode(part.body.data) };\n  return (part.parts || []).map(walk).reduce((a, b) => ({ text: a.text + b.text, html: a.html + b.html }), { text: '', html: '' });\n};\nconst stripHtml = (h) => h.replace(/<style[\\s\\S]*?<\\/style>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/[ \\t]+/g, ' ');\nconst tidy = (s) => s.split('\\n').filter(l => !l.trim().startsWith('>')).join('\\n')\n  .split(/\\nOn .{10,120} wrote:/)[0].replace(/\\n{3,}/g, '\\n\\n').trim().slice(0, 1500);\n// Header lookup: Gmail payload header list, falling back to the flat header keys n8n adds\nconst hdr = (m, name) => ((m.payload && m.payload.headers) || []).find(h => h.name.toLowerCase() === name)?.value\n  || m[name.charAt(0).toUpperCase() + name.slice(1)] || '';\nconst messages = (t.messages || []).slice(-6).map(m => {\n  const { text, html } = walk(m.payload);\n  return { from: hdr(m, 'from'), date: new Date(Number(m.internalDate)).toISOString(), body: tidy(text || stripHtml(html)) };\n});\nreturn [{ json: { thread_id: t.id, untrusted_email_content: true, messages } }];"
       },
-      "id": "d3ee8737-543e-45fe-ba84-f0fd70aaac1a",
+      "id": "e4a92c1d-b84d-4319-874c-0fb14c9f540b",
       "name": "Decode thread",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        448,
+        672,
         0
       ]
     },
     {
       "parameters": {
-        "assignments": {
-          "assignments": []
-        },
-        "includeOtherFields": true,
+        "mode": "raw",
+        "jsonOutput": "={{ JSON.stringify(($('Read failed').isExecuted ? $('Read failed') : $('Decode thread')).first().json) }}",
         "options": {}
       },
-      "id": "1bbd282e-6fa7-4551-a41f-b65ca9ebbed1",
+      "id": "be41d716-6080-4189-953c-288f0270b812",
       "name": "Return thread",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        672,
+        1120,
         0
-      ]
+      ],
+      "executeOnce": true
     }
   ],
   "pinData": {},
   "connections": {
     "Start": {
+      "main": [
+        [
+          {
+            "node": "Start trace",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start trace": {
       "main": [
         [
           {
@@ -99,6 +239,35 @@
             "type": "main",
             "index": 0
           }
+        ],
+        [
+          {
+            "node": "Read failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read failed": {
+      "main": [
+        [
+          {
+            "node": "Send trace to Langfuse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send trace to Langfuse": {
+      "main": [
+        [
+          {
+            "node": "Return thread",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
@@ -106,7 +275,7 @@
       "main": [
         [
           {
-            "node": "Return thread",
+            "node": "Send trace to Langfuse",
             "type": "main",
             "index": 0
           }
@@ -117,14 +286,14 @@
   "active": true,
   "settings": {
     "executionOrder": "v1",
-    "binaryMode": "separate",
-    "errorWorkflow": "mgTS3Y2KolpDdVX0"
+    "binaryMode": "separate"
   },
-  "versionId": "a7185976-a169-402f-953c-382c0970790b",
+  "versionId": "d3e484ca-0ad0-46e0-b758-dd4b6c4a7a7f",
   "meta": {
-    "instanceId": "ec4f3655d17daa19a5288cbca637de661f51f490a4e49ce8a984f9e8ea511425"
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4d273b0de4bdb097868042158b95ef96a446b62fd1b2b5d27959556392b21b82"
   },
   "nodeGroups": [],
-  "id": "iWa3EcbE34hIM3mC",
+  "id": "lmJxPGJHXibuuOHV",
   "tags": []
 }

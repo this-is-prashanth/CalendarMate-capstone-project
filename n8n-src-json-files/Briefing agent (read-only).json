@@ -12,13 +12,49 @@
           ]
         }
       },
-      "id": "e430980e-4da6-4bfb-b26b-6ea6ca8676eb",
+      "id": "bea37487-b68e-4d22-99fb-62ab595aa79a",
       "name": "When called by router",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
       "position": [
         0,
-        112
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "t1",
+              "name": "trace_id",
+              "type": "string",
+              "value": "={{ (\"briefing-\" + $workflow.id + \"-\" + $execution.id).hash(\"md5\") }}"
+            },
+            {
+              "id": "t3",
+              "name": "span_id",
+              "type": "string",
+              "value": "={{ (\"briefing-\" + $workflow.id + \"-\" + $execution.id + \"-root\").hash(\"sha256\").slice(0, 16) }}"
+            },
+            {
+              "id": "t2",
+              "name": "trace_start",
+              "type": "string",
+              "value": "={{ $now.toISO() }}"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "0cc3422f-cdd6-45bb-a707-3b3997bd02e9",
+      "name": "Start trace",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        0
       ]
     },
     {
@@ -31,13 +67,13 @@
           "maxIterations": 15
         }
       },
-      "id": "468dc71c-40cb-4f5d-ba2f-c3c0ed555b6c",
+      "id": "b20dee7d-4a65-410d-ba38-451a3c70cd7b",
       "name": "Briefing agent",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
       "position": [
-        480,
-        112
+        704,
+        0
       ]
     },
     {
@@ -51,17 +87,17 @@
         "builtInTools": {},
         "options": {}
       },
-      "id": "11fd7154-2bba-4ffc-b128-489807e3231f",
+      "id": "ecd1ec26-7b99-41dc-a995-02190b893e46",
       "name": "OpenAI Chat Model",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.3,
       "position": [
-        240,
-        352
+        464,
+        240
       ],
       "credentials": {
         "openAiApi": {
-          "id": "LnvCgMxtM2ub3aHz",
+          "id": "alSOt4AV5ZiXdpcu",
           "name": "OpenAI account"
         }
       }
@@ -85,18 +121,18 @@
           "recurringEventHandling": "expand"
         }
       },
-      "id": "d1619eb3-0f47-432f-94ac-c3d78b303718",
+      "id": "b9ee77f7-5203-410d-abf5-ca920f492169",
       "name": "calendar_events",
       "type": "n8n-nodes-base.googleCalendarTool",
       "typeVersion": 1.3,
       "position": [
-        368,
-        352
+        592,
+        240
       ],
       "credentials": {
         "googleCalendarOAuth2Api": {
-          "id": "FGqp1UtTPeBwJuII",
-          "name": "Google Calendar account"
+          "id": "f9ekqdeAlalROn06",
+          "name": "aiagenticlearner@gmail.com Calendar"
         }
       }
     },
@@ -111,19 +147,19 @@
           "readStatus": "both"
         }
       },
-      "id": "fe3ee429-989e-4cfb-b445-d069757acd02",
+      "id": "7e649c96-e7b1-49c3-b041-5e99df5a4af6",
       "name": "search_mail",
       "type": "n8n-nodes-base.gmailTool",
       "typeVersion": 2.2,
       "position": [
-        496,
-        352
+        720,
+        240
       ],
-      "webhookId": "e41d5cff-eb74-4f18-b9e8-5526455b3e7d",
+      "webhookId": "b36bbf0c-35e7-4c68-8cab-b3476be201bd",
       "credentials": {
         "gmailOAuth2": {
-          "id": "2lEeYirZIRz3xJJ9",
-          "name": "Gmail account"
+          "id": "BXPis0WdaDF0urub",
+          "name": "aiagenticlearner@gmail.com"
         }
       }
     },
@@ -137,18 +173,18 @@
         "limit": 20,
         "options": {}
       },
-      "id": "6be677c1-9605-4913-814c-d0a1aeb8a3e1",
+      "id": "3e7f9ed1-ca71-4bab-87c2-eb1449d294f6",
       "name": "search_chat",
       "type": "n8n-nodes-base.slackTool",
       "typeVersion": 2.7,
       "position": [
-        624,
-        352
+        848,
+        240
       ],
-      "webhookId": "6244a2fa-ea5e-4a5b-ba0d-e4f1f5e86b9b",
+      "webhookId": "615099c3-96a1-405d-9b62-f2cdf1b611d6",
       "credentials": {
         "slackOAuth2Api": {
-          "id": "vz4wy58TLlPUA2aJ",
+          "id": "g6VQQ35RgmGHdNDr",
           "name": "Slack account"
         }
       }
@@ -172,18 +208,18 @@
           ]
         }
       },
-      "id": "46e9c51b-b819-4bdd-a28b-2104daccacc9",
+      "id": "d392429f-133a-4417-94fe-42669a419ec2",
       "name": "search_docs",
       "type": "n8n-nodes-base.googleDriveTool",
       "typeVersion": 3,
       "position": [
-        752,
-        352
+        976,
+        240
       ],
       "credentials": {
         "googleDriveOAuth2Api": {
-          "id": "Nd4610IuTEQTxvTA",
-          "name": "Google Drive account"
+          "id": "9lecX4PdQz8vAshj",
+          "name": "aiagenticlearner@gmail.com drive"
         }
       }
     },
@@ -192,13 +228,13 @@
         "schemaType": "manual",
         "inputSchema": "{\n  \"type\": \"object\",\n  \"required\": [\n    \"status\",\n    \"results\",\n    \"notes\"\n  ],\n  \"properties\": {\n    \"status\": {\n      \"type\": \"string\",\n      \"enum\": [\n        \"ok\",\n        \"needs_input\",\n        \"no_action\"\n      ]\n    },\n    \"results\": {\n      \"type\": \"object\",\n      \"required\": [\n        \"brief\"\n      ],\n      \"properties\": {\n        \"brief\": {\n          \"type\": \"object\",\n          \"required\": [\n            \"title\",\n            \"summary\"\n          ],\n          \"properties\": {\n            \"title\": {\n              \"type\": \"string\"\n            },\n            \"scope\": {\n              \"type\": [\n                \"string\",\n                \"null\"\n              ]\n            },\n            \"window_start\": {\n              \"type\": [\n                \"string\",\n                \"null\"\n              ]\n            },\n            \"window_end\": {\n              \"type\": [\n                \"string\",\n                \"null\"\n              ]\n            },\n            \"summary\": {\n              \"type\": \"string\"\n            },\n            \"events\": {\n              \"type\": \"array\",\n              \"items\": {\n                \"type\": \"object\",\n                \"properties\": {\n                  \"event_id\": {\n                    \"type\": [\n                      \"string\",\n                      \"null\"\n                    ]\n                  },\n                  \"title\": {\n                    \"type\": [\n                      \"string\",\n                      \"null\"\n                    ]\n                  },\n                  \"start\": {\n                    \"type\": [\n                      \"string\",\n                      \"null\"\n                    ]\n                  },\n                  \"end\": {\n                    \"type\": [\n                      \"string\",\n                      \"null\"\n                    ]\n                  },\n                  \"attendees\": {\n                    \"type\": [\n                      \"array\",\n                      \"null\"\n                    ],\n                    \"items\": {\n                      \"type\": \"string\"\n                    }\n                  },\n                  \"prep\": {\n                    \"type\": [\n                      \"string\",\n                      \"null\"\n                    ]\n                  }\n                }\n              }\n            },\n            \"key_points\": {\n              \"type\": \"array\",\n              \"items\": {\n                \"type\": \"string\"\n              }\n            },\n            \"open_items\": {\n              \"type\": \"array\",\n              \"items\": {\n                \"type\": \"object\",\n                \"properties\": {\n                  \"description\": {\n                    \"type\": [\n                      \"string\",\n                      \"null\"\n                    ]\n                  },\n                  \"owner\": {\n                    \"type\": [\n                      \"string\",\n                      \"null\"\n                    ]\n                  },\n                  \"source\": {\n                    \"type\": [\n                      \"string\",\n                      \"null\"\n                    ]\n                  },\n                  \"reference\": {\n                    \"type\": [\n                      \"string\",\n                      \"null\"\n                    ]\n                  }\n                }\n              }\n            },\n            \"people\": {\n              \"type\": \"array\",\n              \"items\": {\n                \"type\": \"object\",\n                \"properties\": {\n                  \"name\": {\n                    \"type\": [\n                      \"string\",\n                      \"null\"\n                    ]\n                  },\n                  \"email\": {\n                    \"type\": [\n                      \"string\",\n                      \"null\"\n                    ]\n                  },\n                  \"context\": {\n                    \"type\": [\n                      \"string\",\n                      \"null\"\n                    ]\n                  }\n                }\n              }\n            },\n            \"documents\": {\n              \"type\": \"array\",\n              \"items\": {\n                \"type\": \"object\",\n                \"properties\": {\n                  \"name\": {\n                    \"type\": [\n                      \"string\",\n                      \"null\"\n                    ]\n                  },\n                  \"link\": {\n                    \"type\": [\n                      \"string\",\n                      \"null\"\n                    ]\n                  },\n                  \"why\": {\n                    \"type\": [\n                      \"string\",\n                      \"null\"\n                    ]\n                  }\n                }\n              }\n            },\n            \"sources\": {\n              \"type\": \"array\",\n              \"items\": {\n                \"type\": \"string\"\n              }\n            }\n          }\n        }\n      }\n    },\n    \"notes\": {\n      \"type\": \"string\"\n    }\n  }\n}"
       },
-      "id": "8ef16487-68d4-4f40-92a7-498d2ea1222c",
+      "id": "e0f06e07-0d5a-49b1-81e9-c5117316720c",
       "name": "Structured Output Parser",
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        880,
-        352
+        1104,
+        240
       ]
     },
     {
@@ -233,19 +269,109 @@
         },
         "options": {}
       },
-      "id": "c4368c32-febb-43a4-be85-a3d9b012517f",
+      "id": "14859811-1788-4c1d-bce6-54e99d2d0c0b",
       "name": "Agent output",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1072,
-        112
+        1296,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://cloud.langfuse.com/api/public/otel/v1/traces",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "langfuseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-langfuse-ingestion-version",
+              "value": "4"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify((() => {\n  const s = $('Start trace').item.json;\n  const task = s.task;\n  const userId = (task && typeof task === 'object') ? (task.user_id || null) : null;\n  const out = $('Agent output').item.json;\n  const startNs = String(DateTime.fromISO(s.trace_start).toMillis()) + '000000';\n  const endNs = String($now.toMillis()) + '000000';\n  const str = (k, v) => ({ key: k, value: { stringValue: String(v == null ? '' : v) } });\n  const attrs = [\n    str('langfuse.trace.name', 'briefing-agent'),\n    str('langfuse.observation.type', 'agent'),\n    str('langfuse.observation.input', typeof task === 'string' ? task : JSON.stringify(task)),\n    str('langfuse.observation.output', JSON.stringify(out)),\n    str('langfuse.observation.level', out.status === 'ok' ? 'DEFAULT' : 'WARNING'),\n    str('langfuse.observation.status_message', out.notes || ''),\n    { key: 'langfuse.trace.tags', value: { arrayValue: { values: [{ stringValue: 'n8n' }, { stringValue: 'briefing-agent' }] } } },\n    str('langfuse.trace.metadata.workflow_id', $workflow.id),\n    str('langfuse.trace.metadata.workflow_name', $workflow.name),\n    str('langfuse.trace.metadata.execution_id', $execution.id),\n    str('langfuse.trace.metadata.mode', $execution.mode),\n    str('langfuse.trace.metadata.status', out.status)\n  ];\n  if (userId) attrs.push(str('langfuse.user.id', userId));\n  return { resourceSpans: [{\n    resource: { attributes: [str('service.name', 'n8n')] },\n    scopeSpans: [{ scope: { name: 'n8n-briefing-agent' }, spans: [{\n      traceId: s.trace_id, spanId: s.span_id, name: 'Briefing agent', kind: 1,\n      startTimeUnixNano: startNs, endTimeUnixNano: endNs,\n      attributes: attrs,\n      status: { code: out.status === 'ok' ? 1 : 0 }\n    }] }]\n  }] };\n})()) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "4a1c67df-94e5-4263-9a4b-b606518674df",
+      "name": "Send trace to Langfuse",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1520,
+        0
+      ],
+      "credentials": {
+        "langfuseApi": {
+          "id": "NScmg3aAxJmZOabD",
+          "name": "Langfuse account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "r1",
+              "name": "status",
+              "type": "string",
+              "value": "={{ $('Agent output').item.json.status }}"
+            },
+            {
+              "id": "r2",
+              "name": "results",
+              "type": "object",
+              "value": "={{ $('Agent output').item.json.results }}"
+            },
+            {
+              "id": "r3",
+              "name": "proposed_actions",
+              "type": "array",
+              "value": "={{ $('Agent output').item.json.proposed_actions }}"
+            },
+            {
+              "id": "r4",
+              "name": "notes",
+              "type": "string",
+              "value": "={{ $('Agent output').item.json.notes }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "221ef71a-7e7c-44b4-adb0-dab2bd9e8dc8",
+      "name": "Return agent output",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1744,
+        0
       ]
     }
   ],
   "pinData": {},
   "connections": {
     "When called by router": {
+      "main": [
+        [
+          {
+            "node": "Start trace",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start trace": {
       "main": [
         [
           {
@@ -332,19 +458,41 @@
           }
         ]
       ]
+    },
+    "Agent output": {
+      "main": [
+        [
+          {
+            "node": "Send trace to Langfuse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send trace to Langfuse": {
+      "main": [
+        [
+          {
+            "node": "Return agent output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
   "settings": {
     "executionOrder": "v1",
-    "binaryMode": "separate",
-    "errorWorkflow": "mgTS3Y2KolpDdVX0"
+    "binaryMode": "separate"
   },
-  "versionId": "3d5b0b6e-67ba-428a-a10d-9b0afd248118",
+  "versionId": "f19c933c-ea4e-4132-bd71-be3e77c59359",
   "meta": {
-    "instanceId": "ec4f3655d17daa19a5288cbca637de661f51f490a4e49ce8a984f9e8ea511425"
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4d273b0de4bdb097868042158b95ef96a446b62fd1b2b5d27959556392b21b82"
   },
   "nodeGroups": [],
-  "id": "cckenr2E9a3hKm0Y",
+  "id": "iIGccD7qUu123cZq",
   "tags": []
 }

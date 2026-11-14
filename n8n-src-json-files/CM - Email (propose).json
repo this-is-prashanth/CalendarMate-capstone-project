@@ -15,26 +15,62 @@
           ]
         }
       },
-      "id": "01207208-9445-4a7e-a429-49122634fbf5",
+      "id": "81c873df-f332-4d67-b977-9090be3d5768",
       "name": "When called by router",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.3,
       "position": [
         0,
-        352
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "t1",
+              "name": "trace_id",
+              "type": "string",
+              "value": "={{ (\"cm-email-\" + $workflow.id + \"-\" + $execution.id).hash(\"md5\") }}"
+            },
+            {
+              "id": "t2",
+              "name": "span_id",
+              "type": "string",
+              "value": "={{ (\"cm-email-\" + $workflow.id + \"-\" + $execution.id + \"-root\").hash(\"sha256\").slice(0, 16) }}"
+            },
+            {
+              "id": "t3",
+              "name": "trace_start",
+              "type": "string",
+              "value": "={{ $now.toISO() }}"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "319c1ada-0506-412f-baab-e01b4d9c6c1b",
+      "name": "Start trace",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        288,
+        192
       ]
     },
     {
       "parameters": {
         "jsCode": "const raw = $input.first().json;\nlet task;\ntry { task = typeof raw.task === 'string' ? JSON.parse(raw.task) : raw.task; }\ncatch (e) { throw new Error('task is not valid JSON'); }\nif (!task || typeof task !== 'object') throw new Error('task is missing');\nfor (const k of ['task_id', 'agent', 'goal']) {\n  if (!task[k]) throw new Error('task missing ' + k);\n}\ntask.mode = 'propose';          // this workflow can never run in another mode\ntask.inputs = task.inputs || {};\nreturn [{ json: { user_id: raw.user_id, task } }];"
       },
-      "id": "7d5ea32c-010a-4b7e-bed0-33c9897f45e8",
+      "id": "51940540-f411-4095-91b2-31df1e0296ec",
       "name": "Parse task",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        288,
-        496
+        512,
+        192
       ]
     },
     {
@@ -60,13 +96,13 @@
         },
         "limit": 1
       },
-      "id": "19c545cd-08c2-4786-9710-369ebafdb943",
+      "id": "badb86bf-314c-45a9-8922-f231ed2b7616",
       "name": "Load profile",
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        512,
-        496
+        736,
+        192
       ]
     },
     {
@@ -94,39 +130,77 @@
         "looseTypeValidation": true,
         "options": {}
       },
-      "id": "e9087fcd-f125-4636-b8c6-dc701f834ea3",
+      "id": "e1f03ca1-b684-4c2c-8d0f-76ca0a1f73ac",
       "name": "Profile found?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        736,
-        496
+        960,
+        192
       ]
     },
     {
       "parameters": {
         "jsCode": "const profile = $('Load profile').first().json;\nconst { task } = $('Parse task').first().json;\nconst j = (v, fallback) => {            // Data table JSON columns arrive as text\n  try { return typeof v === 'string' ? JSON.parse(v) : (v ?? fallback); } catch (e) { return fallback; }\n};\nconst tz = profile.tz || 'Asia/Kolkata';\nconst prefs = j(profile.preferences, {});\nreturn [{ json: {\n  task,\n  ctx: {\n    user_id: profile.user_id, user_name: profile.name, user_email: profile.email,\n    tz, now: DateTime.now().setZone(tz).toISO(),\n    working_hours: j(profile.working_hours, { start: '09:30', end: '18:30' }),\n    calendars: j(profile.calendars, []), preferences: prefs,\n    default_duration: prefs.default_duration || 30,\n    buffer_minutes: prefs.buffer_minutes || 10,\n    company_domains: prefs.company_domains || ['example.com'],   // replace with yours\n    vip: prefs.vip || [], standing_approvals: j(profile.standing_approvals, [])\n  }\n} }];"
       },
-      "id": "1f760a33-d504-4ff3-923e-de310da2e885",
+      "id": "73c23a86-749a-4f48-bb0f-86014ce2ee17",
       "name": "Build context",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        816,
-        368
+        1296,
+        -96
       ]
     },
     {
       "parameters": {
         "jsCode": "const { task, ctx } = $('Build context').first().json;\nconst tw = (task.inputs && task.inputs.time_window) || {};\nconst end = tw.end ? DateTime.fromISO(tw.end) : DateTime.fromISO(ctx.now);\nconst start = tw.start ? DateTime.fromISO(tw.start)\n  : end.minus({ hours: ctx.preferences.triage_window_hours || 24 });\nreturn [{ json: { window_start: start.toISO(), window_end: end.toISO() } }];"
       },
-      "id": "6021f0cf-3b36-4cd6-bc21-20bdee8c6a44",
+      "id": "6aca7cee-e860-4766-828c-1b80e815adbf",
       "name": "Window",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1040,
-        368
+        1520,
+        -96
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://gmail.googleapis.com/gmail/v1/users/me/profile",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "gmailOAuth2",
+        "options": {}
+      },
+      "id": "8c588100-4d44-4db8-bd9f-128037248fa7",
+      "name": "Get mailbox profile",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1744,
+        -96
+      ],
+      "executeOnce": true,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "BXPis0WdaDF0urub",
+          "name": "aiagenticlearner@gmail.com"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const win = $('Window').first().json;\nconst ctx = $('Build context').first().json.ctx;\nconst actual = String($input.first().json.emailAddress || '').toLowerCase();\nconst expected = String(ctx.user_email || '').toLowerCase();\nif (!actual) throw new Error('Cannot verify the connected Gmail account: profile lookup returned no address.');\nif (expected && actual !== expected) throw new Error('Gmail credential is signed in as ' + actual + ' but the profile expects ' + expected + '. No mail was read.');\nreturn [{ json: { ...win, mailbox: actual } }];"
+      },
+      "id": "8ff669a6-653e-461d-ba13-68a9ad69c034",
+      "name": "Verify mailbox",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1968,
+        -96
       ]
     },
     {
@@ -142,20 +216,20 @@
         },
         "options": {}
       },
-      "id": "3c5342f1-6102-4276-899a-537e6ba9927c",
+      "id": "e7facbda-3727-48c9-aabd-69fd4d72f30f",
       "name": "Fetch inbox",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.2,
       "position": [
-        1264,
-        368
+        2192,
+        -96
       ],
       "alwaysOutputData": true,
-      "webhookId": "542615c4-354a-4c75-a1c7-972c21f435e6",
+      "webhookId": "e37ee7f7-006d-493c-a6e0-730ab7242b38",
       "credentials": {
         "gmailOAuth2": {
-          "id": "2lEeYirZIRz3xJJ9",
-          "name": "Gmail account"
+          "id": "BXPis0WdaDF0urub",
+          "name": "aiagenticlearner@gmail.com"
         }
       }
     },
@@ -163,13 +237,13 @@
       "parameters": {
         "jsCode": "const ctx = $('Build context').first().json.ctx;\nconst me = String(ctx.user_email || '').toLowerCase();\nconst vip = (ctx.vip || []).map(v => String(v).toLowerCase());\n// Works with both Gmail output shapes: the raw API payload (payload.headers list)\n// and n8n's parsed message (headers object, from/to objects, labelIds, text).\nconst hdr = (m, name) => {\n  // Prefer n8n's decoded fields (from.text, subject) over raw, possibly MIME-encoded headers\n  const dec = m[name];\n  if (typeof dec === 'string' && dec) return dec.replace(/\\s+/g, ' ').trim();\n  if (dec && typeof dec === 'object' && dec.text) return String(dec.text).replace(/\\s+/g, ' ').trim();\n  const hit = ((m.payload && m.payload.headers) || []).find(h => h.name.toLowerCase() === name);\n  if (hit) return hit.value || '';\n  if (m.headers && typeof m.headers === 'object' && typeof m.headers[name] === 'string') {\n    return m.headers[name].replace(/^[A-Za-z-]+:\\s*/, '');\n  }\n  const flat = m[name.charAt(0).toUpperCase() + name.slice(1)];\n  return typeof flat === 'string' ? flat : '';\n};\nconst noiseLabels = ['CATEGORY_PROMOTIONS', 'CATEGORY_SOCIAL', 'CATEGORY_FORUMS'];\nconst isInvite = (s) => /^(updated )?invitation:|^(canceled|cancelled) event:|^(accepted|declined|tentatively accepted):/i.test(s);\nconst byThread = new Map();\nlet noiseDropped = 0;\n// Fetch inbox always outputs one item; an empty inbox arrives as one empty item\nconst all = $input.all().filter(i => Object.keys(i.json).length > 0);\nfor (const { json: m } of all) {\n  const from = hdr(m, 'from'), to = hdr(m, 'to').toLowerCase(), cc = hdr(m, 'cc').toLowerCase();\n  const subject = hdr(m, 'subject');\n  const labels = m.labelIds || (m.labels || []).map(l => l.id);\n  const ts = m.internalDate ? Number(m.internalDate) : Date.parse(m.date || ctx.now);\n  const row = {\n    thread_id: m.threadId, message_id: m.id, from, subject,\n    received: new Date(ts).toISOString(),\n    snippet: String(m.snippet || m.text || '').replace(/\\[?https?:\\/\\/\\S+\\]?/g, '').replace(/[\\u034f\\u00ad\\u200c\\u200b]/g, '').replace(/\\s+/g, ' ').trim().slice(0, 240),\n    direct_to_me: to.includes(me), cc_only: !to.includes(me) && cc.includes(me),\n    is_vip: vip.some(v => from.toLowerCase().includes(v)),\n    is_invite: isInvite(subject), unread: labels.includes('UNREAD'),\n  };\n  if (labels.some(l => noiseLabels.includes(l)) && !row.is_vip && !row.direct_to_me) { noiseDropped++; continue; }\n  const prev = byThread.get(row.thread_id);\n  if (!prev || prev.received < row.received) byThread.set(row.thread_id, row);\n}\nconst rows = [...byThread.values()].sort((a, b) => b.received.localeCompare(a.received)).slice(0, 80);\nreturn [{ json: { rows, noise_dropped: noiseDropped, fetched: all.length } }];"
       },
-      "id": "b2fc4308-b814-48e2-873d-db59d90bd0d6",
+      "id": "18821fe3-e419-47f9-a806-cc7a7bd813e7",
       "name": "Compact inbox",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1488,
-        368
+        2416,
+        -96
       ]
     },
     {
@@ -184,13 +258,13 @@
           "enableStreaming": false
         }
       },
-      "id": "e87188fd-0c0f-468f-9161-9974df51be1b",
+      "id": "f5465027-c513-4f21-a051-df84ea15a7f2",
       "name": "Email agent",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
       "position": [
-        1600,
-        224
+        2944,
+        -96
       ],
       "onError": "continueErrorOutput"
     },
@@ -205,17 +279,17 @@
         "builtInTools": {},
         "options": {}
       },
-      "id": "4e097e1b-1c40-4138-abbc-a9e318c60c30",
+      "id": "38821a89-4023-44dc-af91-1f6fbcbfb536",
       "name": "OpenAI Chat Model",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.3,
       "position": [
-        1296,
-        368
+        2640,
+        144
       ],
       "credentials": {
         "openAiApi": {
-          "id": "LnvCgMxtM2ub3aHz",
+          "id": "alSOt4AV5ZiXdpcu",
           "name": "OpenAI account"
         }
       }
@@ -226,14 +300,16 @@
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "iWa3EcbE34hIM3mC",
+          "value": "GhgPBpOvI4qGoPWn",
           "cachedResultName": "CM - Read Thread (tool)"
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
           "value": {
             "thread_id": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('thread_id', 'Gmail thread id from the inbox list') }}",
-            "user_id": "={{ $('Build context').first().json.ctx.user_id }}"
+            "user_id": "={{ $('Build context').first().json.ctx.user_id }}",
+            "trace_id": "={{ $('Start trace').first().json.trace_id }}",
+            "parent_span_id": "={{ $('Start trace').first().json.span_id }}"
           },
           "matchingColumns": [],
           "schema": [
@@ -254,19 +330,37 @@
               "display": true,
               "canBeUsedToMatch": true,
               "type": "string"
+            },
+            {
+              "id": "trace_id",
+              "displayName": "trace_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "parent_span_id",
+              "displayName": "parent_span_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
             }
           ],
           "attemptToConvertTypes": false,
           "convertFieldsToString": false
         }
       },
-      "id": "ae9d782f-22d8-4b24-a63a-d0c678866dbe",
+      "id": "6619eabf-6dcf-48ec-991e-40d425a32670",
       "name": "read_thread",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        1424,
-        464
+        2768,
+        144
       ]
     },
     {
@@ -280,19 +374,19 @@
           "readStatus": "both"
         }
       },
-      "id": "3a550186-4196-4f2f-b641-07e0325556f6",
+      "id": "f98a3c6b-4859-49a7-9cbb-f2bc7869f03f",
       "name": "search_mail",
       "type": "n8n-nodes-base.gmailTool",
       "typeVersion": 2.2,
       "position": [
-        1552,
-        464
+        2896,
+        144
       ],
-      "webhookId": "8bfb6828-18ac-46ce-90fe-c150fee49d07",
+      "webhookId": "9cb3d559-59b0-4ba7-98d8-a95aa3889921",
       "credentials": {
         "gmailOAuth2": {
-          "id": "2lEeYirZIRz3xJJ9",
-          "name": "Gmail account"
+          "id": "BXPis0WdaDF0urub",
+          "name": "aiagenticlearner@gmail.com"
         }
       }
     },
@@ -311,19 +405,19 @@
         },
         "options": {}
       },
-      "id": "1c7eb714-f336-4983-b3f3-775f8c0bf415",
+      "id": "6b5adfa0-b411-4499-819f-ce380d703f7f",
       "name": "my_sent_style",
       "type": "n8n-nodes-base.gmailTool",
       "typeVersion": 2.2,
       "position": [
-        1680,
-        464
+        3024,
+        144
       ],
-      "webhookId": "db6cfdd9-cb61-4f4f-a5bf-1c90774b24bc",
+      "webhookId": "400e715c-e735-4cb9-ad58-3b6c50593fbd",
       "credentials": {
         "gmailOAuth2": {
-          "id": "2lEeYirZIRz3xJJ9",
-          "name": "Gmail account"
+          "id": "BXPis0WdaDF0urub",
+          "name": "aiagenticlearner@gmail.com"
         }
       }
     },
@@ -345,18 +439,18 @@
           "recurringEventHandling": "expand"
         }
       },
-      "id": "3d7f53da-f885-4d2d-b360-7870c587f00d",
+      "id": "a74a3d2c-1e55-409f-9048-1a42f6be5b8a",
       "name": "calendar_lookup",
       "type": "n8n-nodes-base.googleCalendarTool",
       "typeVersion": 1.3,
       "position": [
-        1808,
-        464
+        3152,
+        144
       ],
       "credentials": {
         "googleCalendarOAuth2Api": {
-          "id": "FGqp1UtTPeBwJuII",
-          "name": "Google Calendar account"
+          "id": "f9ekqdeAlalROn06",
+          "name": "aiagenticlearner@gmail.com Calendar"
         }
       }
     },
@@ -372,19 +466,19 @@
           "sendTo": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('to_email', 'Recipient email addresses, comma separated') }}"
         }
       },
-      "id": "a3d7d7f6-3e98-4cf2-b49d-543bdfef7639",
+      "id": "5946b16c-177f-412d-8258-a9c445552654",
       "name": "create_draft",
       "type": "n8n-nodes-base.gmailTool",
       "typeVersion": 2.2,
       "position": [
-        1936,
-        464
+        3280,
+        144
       ],
-      "webhookId": "deacc66a-32d8-41b0-a886-efee5035e149",
+      "webhookId": "2639b70a-6b2d-4344-82d9-fc039ea77b26",
       "credentials": {
         "gmailOAuth2": {
-          "id": "2lEeYirZIRz3xJJ9",
-          "name": "Gmail account"
+          "id": "BXPis0WdaDF0urub",
+          "name": "aiagenticlearner@gmail.com"
         }
       }
     },
@@ -392,26 +486,26 @@
       "parameters": {
         "jsonSchemaExample": "{\n  \"status\": \"ok\",\n  \"counts\": {\"urgent\": 0, \"meeting_logistics\": 0, \"needs_reply\": 0, \"fyi\": 0, \"noise\": 0},\n  \"urgent\": [{\"thread_id\": \"\", \"from\": \"\", \"subject\": \"\", \"summary\": \"\", \"next_move\": \"user\", \"suggested_action\": \"\"}],\n  \"meeting_requests\": [{\"thread_id\": \"\", \"from\": \"\", \"request\": \"\", \"proposed_time\": \"\", \"attendees\": [\"\"], \"needs_scheduler\": true}],\n  \"action_items\": [{\"thread_id\": \"\", \"item\": \"\", \"owner\": \"\", \"due\": \"\"}],\n  \"drafts\": [{\"draft_id\": \"\", \"thread_id\": \"\", \"to\": [\"\"], \"summary\": \"\", \"body_preview\": \"\"}],\n  \"fyi_digest\": [\"\"],\n  \"noise_summary\": \"\",\n  \"notes\": \"\"\n}"
       },
-      "id": "18007789-ffbd-4c04-9a4f-341acd6f4bcc",
+      "id": "400e450e-14d8-4583-a4a3-fd36e89cc471",
       "name": "Structured Output Parser",
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        2064,
-        464
+        3408,
+        144
       ]
     },
     {
       "parameters": {
         "jsCode": "const out = $input.first().json.output || {};\nconst ctx = $('Build context').first().json.ctx;\nconst isExternal = (emails) => (emails || []).some(e => !ctx.company_domains.some(d => String(e).toLowerCase().endsWith('@' + d)));\nconst notes = [out.notes || ''];\nconst all = out.drafts || [];\nlet drafts = all.filter(d => d.draft_id && d.thread_id);\nif (drafts.length < all.length) notes.push('Dropped drafts with no draft id or thread id.');\nif (drafts.length > 8) { notes.push('More than 8 drafts were made; listing the first 8. The rest are in Gmail Drafts.'); drafts = drafts.slice(0, 8); }\nconst reqs = out.meeting_requests || [];\nconst needsScheduler = reqs.some(m => m.needs_scheduler) || drafts.some(d => /TIME OPTIONS FROM CALENDAR/.test(d.body_preview || ''));\nreturn [{ json: {\n  status: out.status,\n  results: { counts: out.counts, urgent: out.urgent || [], meeting_requests: reqs, action_items: out.action_items || [],\n    fyi_digest: (out.fyi_digest || []).slice(0, 5), noise_summary: out.noise_summary || '', needs_scheduler: needsScheduler },\n  proposals: drafts.map(d => ({ action: 'send_draft', draft_id: d.draft_id, thread_id: d.thread_id, to: d.to || [],\n    summary: d.summary, body_preview: d.body_preview, affects: d.to || [], external: isExternal(d.to) })),\n  notes: notes.filter(Boolean).join(' ')\n} }];"
       },
-      "id": "fbd179cb-2e0e-464f-9b55-9152014f61f1",
+      "id": "732622b0-b71f-494f-878b-3a775d8a1e32",
       "name": "Validate output",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2320,
-        224
+        3728,
+        0
       ]
     },
     {
@@ -439,26 +533,26 @@
         "looseTypeValidation": true,
         "options": {}
       },
-      "id": "8af74563-2bd5-4906-85ad-d071d4ab79f1",
+      "id": "c0dc0e06-ce67-44f9-b31d-53b5dcd51cbe",
       "name": "Any drafts to check?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        2544,
-        224
+        3952,
+        0
       ]
     },
     {
       "parameters": {
         "jsCode": "const meta = $('Validate output').first().json;\nreturn meta.proposals.map(p => ({ json: { draft_id: p.draft_id } }));"
       },
-      "id": "764eda99-3122-4cbf-865f-384d4c55165e",
+      "id": "f50ace29-f4c3-4fd7-b114-bbe3f63b5310",
       "name": "Draft ids",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2768,
-        144
+        4176,
+        -80
       ]
     },
     {
@@ -468,19 +562,19 @@
         "messageId": "={{ $json.draft_id }}",
         "options": {}
       },
-      "id": "574c1900-944c-4917-ab01-1971176ad1d7",
+      "id": "00b1e82d-f647-41d8-849b-8706c08f6843",
       "name": "Check draft exists",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.2,
       "position": [
-        2992,
-        144
+        4400,
+        -80
       ],
-      "webhookId": "da5c42ab-5215-4e23-9c92-74256d6ce796",
+      "webhookId": "9c813ea4-4bfb-44c9-9701-97e9726b3284",
       "credentials": {
         "gmailOAuth2": {
-          "id": "2lEeYirZIRz3xJJ9",
-          "name": "Gmail account"
+          "id": "BXPis0WdaDF0urub",
+          "name": "aiagenticlearner@gmail.com"
         }
       },
       "onError": "continueRegularOutput"
@@ -489,13 +583,13 @@
       "parameters": {
         "jsCode": "const meta = $('Validate output').first().json;\nconst checks = meta.proposals.length ? $input.all().map(i => i.json) : [];\nconst notes = [meta.notes];\nconst proposals = meta.proposals.filter((p, i) => {\n  const c = checks[i] || {};\n  const exists = !c.error && (c.id || (c.message && c.message.id));\n  if (!exists) notes.push('Dropped a draft reply to ' + (p.to || []).join(', ') + ': draft ' + p.draft_id + ' was not found in Gmail.');\n  return exists;\n});\nreturn [{ json: { ...meta, status: proposals.length < meta.proposals.length ? 'partial' : meta.status,\n  proposals, notes: notes.filter(Boolean).join(' ') } }];"
       },
-      "id": "f2a1afa2-99c7-4e23-8403-500295c004c9",
+      "id": "36853d83-ee90-436f-a265-3cc385ff313e",
       "name": "Final proposals",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3216,
-        224
+        4624,
+        0
       ]
     },
     {
@@ -521,26 +615,26 @@
         },
         "options": {}
       },
-      "id": "fddb7e8c-e251-4c7d-810e-388af266a02c",
+      "id": "f5a3a6e5-80e0-4bf2-bc13-583f74d9e046",
       "name": "Has proposals?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        3104,
-        416
+        4960,
+        0
       ]
     },
     {
       "parameters": {
         "jsCode": "const meta = $input.first().json;                 // from Final proposals\nconst user_id = $('Parse task').first().json.user_id;\nconst agent = 'email';                             // hard-coded per workflow\nconst pid = (i) => String($execution.id) + '-' + (i + 1);   // Build response uses the same rule\nreturn meta.proposals.map((p, i) => ({ json: {\n  proposal_id: pid(i), user_id, agent,\n  action: JSON.stringify(p), summary: p.summary, external: !!p.external, status: 'pending'\n} }));"
       },
-      "id": "12c83548-38c5-403e-a056-519f4059e010",
+      "id": "b620df08-ebcf-44ef-b91e-6cbeadb9f17f",
       "name": "Split proposals",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3328,
-        336
+        5184,
+        -80
       ]
     },
     {
@@ -561,6 +655,7 @@
             "external": "={{ $json.external }}",
             "status": "={{ $json.status }}"
           },
+          "matchingColumns": [],
           "schema": [
             {
               "id": "proposal_id",
@@ -569,7 +664,8 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true
+              "readOnly": false,
+              "removed": false
             },
             {
               "id": "user_id",
@@ -578,7 +674,8 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true
+              "readOnly": false,
+              "removed": false
             },
             {
               "id": "agent",
@@ -587,7 +684,8 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true
+              "readOnly": false,
+              "removed": false
             },
             {
               "id": "action",
@@ -596,7 +694,8 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true
+              "readOnly": false,
+              "removed": false
             },
             {
               "id": "summary",
@@ -605,7 +704,8 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true
+              "readOnly": false,
+              "removed": false
             },
             {
               "id": "external",
@@ -614,7 +714,8 @@
               "defaultMatch": false,
               "display": true,
               "type": "boolean",
-              "canBeUsedToMatch": true
+              "readOnly": false,
+              "removed": false
             },
             {
               "id": "status",
@@ -623,33 +724,117 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true
+              "readOnly": false,
+              "removed": false
             }
-          ]
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
         },
         "options": {}
       },
-      "id": "11952149-7c3c-4ff3-bb46-9b814bb501ed",
+      "id": "60a7a018-5ccb-4803-86bb-f9e897c2088d",
       "name": "Save proposals",
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        3552,
-        336
+        5408,
+        -80
       ]
     },
     {
       "parameters": {
         "jsCode": "const meta = $('Final proposals').first().json;   // { status, results, proposals, notes }\nconst pid = (i) => String($execution.id) + '-' + (i + 1);   // same rule as Split proposals\nreturn [{ json: {\n  status: meta.status,\n  results: meta.results,\n  proposed_actions: meta.proposals.map((p, i) => ({\n    proposal_id: pid(i), summary: p.summary, affects: p.affects || [], external: !!p.external\n  })),\n  notes: meta.notes || ''\n} }];"
       },
-      "id": "8bddb21a-487d-4b59-ba0b-ffa78417c275",
+      "id": "ab5bfa9d-872e-46a7-8861-3475519dc13e",
       "name": "Build response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3776,
-        416
+        5632,
+        0
       ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://cloud.langfuse.com/api/public/otel/v1/traces",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "langfuseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-langfuse-ingestion-version",
+              "value": "4"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify((() => {\n  const s = $('Start trace').first().json;\n  const task = s.task;\n  const userId = s.user_id || ((task && typeof task === 'object') ? task.user_id : null) || null;\n  const out = ($('Build response').isExecuted ? $('Build response') : $('Failure response')).first().json;\n  const startNs = String(DateTime.fromISO(s.trace_start).toMillis()) + '000000';\n  const endNs = String($now.toMillis()) + '000000';\n  const str = (k, v) => ({ key: k, value: { stringValue: String(v == null ? '' : v) } });\n  const ok = out.status === 'ok' || out.status === 'no_action';\n  const attrs = [\n    str('langfuse.trace.name', 'cm-email-agent'),\n    str('langfuse.observation.type', 'agent'),\n    str('langfuse.observation.input', typeof task === 'string' ? task : JSON.stringify(task)),\n    str('langfuse.observation.output', JSON.stringify(out)),\n    str('langfuse.observation.level', out.status === 'failed' ? 'ERROR' : (ok ? 'DEFAULT' : 'WARNING')),\n    str('langfuse.observation.status_message', out.notes || ''),\n    { key: 'langfuse.trace.tags', value: { arrayValue: { values: [{ stringValue: 'n8n' }, { stringValue: 'cm-email-agent' }] } } },\n    str('langfuse.trace.metadata.workflow_id', $workflow.id),\n    str('langfuse.trace.metadata.workflow_name', $workflow.name),\n    str('langfuse.trace.metadata.execution_id', $execution.id),\n    str('langfuse.trace.metadata.mode', $execution.mode),\n    str('langfuse.trace.metadata.status', out.status),\n    str('langfuse.trace.metadata.proposal_count', (out.proposed_actions || []).length),\n    str('langfuse.trace.metadata.counts', JSON.stringify((out.results && out.results.counts) || {}))\n  ];\n  if (userId) attrs.push(str('langfuse.user.id', userId));\n  return { resourceSpans: [{\n    resource: { attributes: [str('service.name', 'n8n')] },\n    scopeSpans: [{ scope: { name: 'n8n-cm-email-agent' }, spans: [{\n      traceId: s.trace_id, spanId: s.span_id, name: 'Email agent', kind: 1,\n      startTimeUnixNano: startNs, endTimeUnixNano: endNs,\n      attributes: attrs,\n      status: { code: out.status === 'failed' ? 2 : 1 }\n    }] }]\n  }] };\n})()) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "257ef7ed-9939-43dc-8ddc-abb3751675b8",
+      "name": "Send trace to Langfuse",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        5968,
+        192
+      ],
+      "executeOnce": true,
+      "credentials": {
+        "langfuseApi": {
+          "id": "NScmg3aAxJmZOabD",
+          "name": "Langfuse account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "r1",
+              "name": "status",
+              "type": "string",
+              "value": "={{ ($('Build response').isExecuted ? $('Build response') : $('Failure response')).first().json.status }}"
+            },
+            {
+              "id": "r2",
+              "name": "results",
+              "type": "object",
+              "value": "={{ ($('Build response').isExecuted ? $('Build response') : $('Failure response')).first().json.results }}"
+            },
+            {
+              "id": "r3",
+              "name": "proposed_actions",
+              "type": "array",
+              "value": "={{ ($('Build response').isExecuted ? $('Build response') : $('Failure response')).first().json.proposed_actions }}"
+            },
+            {
+              "id": "r4",
+              "name": "notes",
+              "type": "string",
+              "value": "={{ ($('Build response').isExecuted ? $('Build response') : $('Failure response')).first().json.notes }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "562c7975-c7a0-406c-a2f7-bd12e18f89c5",
+      "name": "Return output",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        6192,
+        192
+      ],
+      "executeOnce": true
     },
     {
       "parameters": {
@@ -683,19 +868,30 @@
         },
         "options": {}
       },
-      "id": "0db25f1b-6570-4c1c-bc3a-bf4a52bdd206",
+      "id": "3e8286fa-dfc5-488a-b6c9-51f80540c899",
       "name": "Failure response",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        2768,
-        528
+        4176,
+        352
       ]
     }
   ],
   "pinData": {},
   "connections": {
     "When called by router": {
+      "main": [
+        [
+          {
+            "node": "Start trace",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start trace": {
       "main": [
         [
           {
@@ -758,6 +954,28 @@
       ]
     },
     "Window": {
+      "main": [
+        [
+          {
+            "node": "Get mailbox profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get mailbox profile": {
+      "main": [
+        [
+          {
+            "node": "Verify mailbox",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify mailbox": {
       "main": [
         [
           {
@@ -986,64 +1204,117 @@
           }
         ]
       ]
+    },
+    "Build response": {
+      "main": [
+        [
+          {
+            "node": "Send trace to Langfuse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send trace to Langfuse": {
+      "main": [
+        [
+          {
+            "node": "Return output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Failure response": {
+      "main": [
+        [
+          {
+            "node": "Send trace to Langfuse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
   "settings": {
     "executionOrder": "v1",
-    "binaryMode": "separate",
-    "errorWorkflow": "mgTS3Y2KolpDdVX0"
+    "binaryMode": "separate"
   },
-  "versionId": "5555bdbc-aaab-4315-a8a2-692c2b078f95",
+  "versionId": "7c432145-721b-42e9-9bba-dbc0e0ec649b",
   "meta": {
-    "instanceId": "ec4f3655d17daa19a5288cbca637de661f51f490a4e49ce8a984f9e8ea511425"
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4d273b0de4bdb097868042158b95ef96a446b62fd1b2b5d27959556392b21b82"
   },
   "nodeGroups": [
     {
-      "id": "658d42b1-222e-4d15-bf81-f2347772f20e",
+      "id": "ce7ceebe-95f7-4931-a68f-c55e8fc8879d",
       "name": "Load user profile",
       "nodeIds": [
-        "7d5ea32c-010a-4b7e-bed0-33c9897f45e8",
-        "19c545cd-08c2-4786-9710-369ebafdb943",
-        "e9087fcd-f125-4636-b8c6-dc701f834ea3"
+        "319c1ada-0506-412f-baab-e01b4d9c6c1b",
+        "51940540-f411-4095-91b2-31df1e0296ec",
+        "badb86bf-314c-45a9-8922-f231ed2b7616",
+        "e1f03ca1-b684-4c2c-8d0f-76ca0a1f73ac"
       ],
-      "description": "Parses the router task, forces propose mode, and looks up the active user profile before any mail is read"
+      "description": "Starts the trace timer, parses the router task, forces propose mode, and looks up the active user profile"
     },
     {
-      "id": "dd1ba4f2-8bdf-4855-97b2-90ddd00589af",
-      "name": "Collect recent inbox",
+      "id": "5090a05f-689a-4317-89dd-3e2e08dbdb63",
+      "name": "Triage recent inbox",
       "nodeIds": [
-        "1f760a33-d504-4ff3-923e-de310da2e885",
-        "6021f0cf-3b36-4cd6-bc21-20bdee8c6a44",
-        "3c5342f1-6102-4276-899a-537e6ba9927c",
-        "b2fc4308-b814-48e2-873d-db59d90bd0d6"
+        "73c23a86-749a-4f48-bb0f-86014ce2ee17",
+        "6aca7cee-e860-4766-828c-1b80e815adbf",
+        "8c588100-4d44-4db8-bd9f-128037248fa7",
+        "8ff669a6-653e-461d-ba13-68a9ad69c034",
+        "e7facbda-3727-48c9-aabd-69fd4d72f30f",
+        "18821fe3-e419-47f9-a806-cc7a7bd813e7",
+        "f5465027-c513-4f21-a051-df84ea15a7f2",
+        "38821a89-4023-44dc-af91-1f6fbcbfb536",
+        "6619eabf-6dcf-48ec-991e-40d425a32670",
+        "f98a3c6b-4859-49a7-9cbb-f2bc7869f03f",
+        "6b5adfa0-b411-4499-819f-ce380d703f7f",
+        "a74a3d2c-1e55-409f-9048-1a42f6be5b8a",
+        "5946b16c-177f-412d-8258-a9c445552654",
+        "400e450e-14d8-4583-a4a3-fd36e89cc471"
       ],
-      "description": "Sets the time window (last 24h by default), pulls up to 100 messages, drops promos, keeps one row per thread"
+      "description": "Pulls the last 24h of mail (up to 100), drops promos, then the agent triages threads and saves low-risk reply drafts"
     },
     {
-      "id": "d3517220-f1c6-46e9-820b-abae4fa9cf2e",
+      "id": "23edf8c0-0ff3-4e9c-98d0-0711c4e9cf8a",
       "name": "Verify saved drafts",
       "nodeIds": [
-        "fbd179cb-2e0e-464f-9b55-9152014f61f1",
-        "8af74563-2bd5-4906-85ad-d071d4ab79f1",
-        "764eda99-3122-4cbf-865f-384d4c55165e",
-        "574c1900-944c-4917-ab01-1971176ad1d7",
-        "f2a1afa2-99c7-4e23-8403-500295c004c9"
+        "732622b0-b71f-494f-878b-3a775d8a1e32",
+        "c0dc0e06-ce67-44f9-b31d-53b5dcd51cbe",
+        "f50ace29-f4c3-4fd7-b114-bbe3f63b5310",
+        "00b1e82d-f647-41d8-849b-8706c08f6843",
+        "36853d83-ee90-436f-a265-3cc385ff313e"
       ],
       "description": "Checks the agent output, caps drafts at 8, flags external recipients, and drops any draft id Gmail cannot find"
     },
     {
-      "id": "858f42d4-63af-4b63-8ded-8b8079060d63",
+      "id": "b125801b-5580-4b75-8c00-3f4874e47e10",
       "name": "Save and respond",
       "nodeIds": [
-        "fddb7e8c-e251-4c7d-810e-388af266a02c",
-        "12c83548-38c5-403e-a056-519f4059e010",
-        "11952149-7c3c-4ff3-bb46-9b814bb501ed",
-        "8bddb21a-487d-4b59-ba0b-ffa78417c275"
+        "f5a3a6e5-80e0-4bf2-bc13-583f74d9e046",
+        "b620df08-ebcf-44ef-b91e-6cbeadb9f17f",
+        "60a7a018-5ccb-4803-86bb-f9e897c2088d",
+        "ab5bfa9d-872e-46a7-8861-3475519dc13e"
       ],
-      "description": "Stores each draft as a pending proposal for approval and returns the summary to the router"
+      "description": "Stores each draft as a pending proposal for approval and builds the summary for the router"
+    },
+    {
+      "id": "e531c9d5-b6f2-445f-9c67-fb361f13e777",
+      "name": "Trace and return",
+      "nodeIds": [
+        "257ef7ed-9939-43dc-8ddc-abb3751675b8",
+        "562c7975-c7a0-406c-a2f7-bd12e18f89c5"
+      ],
+      "description": "Sends one trace per run (input, output, status, user) to Langfuse, then returns the result or failure to the router"
     }
   ],
-  "id": "P5GIR5ELe7XhMfbG",
+  "id": "Z1BP0hxBNZf9myUP",
   "tags": []
 }
