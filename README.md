@@ -8,7 +8,7 @@ The design is **propose, then approve, then execute**:
 2. Every proposal is saved as a `pending` row in a data table and shown to the user with a `proposal_id`.
 3. Only after the user approves does an *execute* workflow run. It re-reads the stored row, re-validates it and performs the action.
 
-All agents use the OpenAI chat model `gpt-6.1-sol`. All workflows share the same error workflow (`mgTS3Y2KolpDdVX`).
+All agents use the OpenAI chat model `gpt-6.1-sol`. All workflows share the same error workflow.
 
 ## Workflow inventory
 
@@ -219,7 +219,7 @@ Rules in its system prompt:
 
 There are two n8n Data Tables.
 
-### `user_profiles` (id `WCuHtLBeLnFmdhTc`)
+### `user_profiles` 
 
 One row per user. **The workflows only read it. Nothing writes to it**, so it is maintained manually.
 
@@ -240,7 +240,7 @@ One row per user. **The workflows only read it. Nothing writes to it**, so it is
 - each propose workflow starts (they look up the active profile by `user_id`);
 - the three scheduled triggers list every row where `active` is true.
 
-### `pending_proposals` (id `5NcIttwxWCVGLBLB`)
+### `pending_proposals` 
 
 The approval queue and audit trail for everything that would change the outside world.
 
